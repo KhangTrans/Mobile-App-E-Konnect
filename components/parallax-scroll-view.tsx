@@ -73,6 +73,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 32,
+    paddingBottom: 120, // To avoid being hidden by tab bar
     gap: 16,
     overflow: 'hidden',
   },

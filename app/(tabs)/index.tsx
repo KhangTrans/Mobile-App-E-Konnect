@@ -140,8 +140,8 @@ export default function HomeScreen() {
         </View>
       </View>
       
-      {/* Padding dưới cùng */}
-      <View style={{height: 60}} />
+      {/* Padding cho Floating Tab Bar */}
+      <View style={{ height: 120 }} />
     </ScrollView>
   );
 }

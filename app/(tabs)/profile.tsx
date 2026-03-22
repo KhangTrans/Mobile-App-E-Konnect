@@ -228,6 +228,9 @@ export default function ProfileScreen() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>Phiên bản 1.0.0</Text>
       </View>
+
+      {/* Padding cho Floating Tab Bar */}
+      <View style={{ height: 120 }} />
     </ScrollView>
   );
 }
