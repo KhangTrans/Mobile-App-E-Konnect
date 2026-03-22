@@ -237,7 +237,7 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               <Text style={styles.buttonText}>Gửi mã OTP</Text>
-              <AntDesign name="arrowright" size={18} color="#fff" style={{ marginLeft: 8 }} />
+              <AntDesign name="arrow-right" size={18} color="#fff" style={{ marginLeft: 8 }} />
             </>
           )}
         </LinearGradient>
