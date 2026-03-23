@@ -121,7 +121,10 @@ export default function ForgotPasswordScreen() {
     // Basic validation
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
-      setErrors({ ...errors, email: emailValidation.message || "Email không hợp lệ" });
+      setErrors({
+        ...errors,
+        email: emailValidation.message || "Email không hợp lệ",
+      });
       return;
     }
     setErrors({ ...errors, email: "" });
@@ -130,7 +133,10 @@ export default function ForgotPasswordScreen() {
     try {
       const response = await authService.forgotPassword(email);
       if (response.success) {
-        alert.showSuccess("Thành công", "Mã xác thực đã được gửi đến email của bạn.");
+        alert.showSuccess(
+          "Thành công",
+          "Mã xác thực đã được gửi đến email của bạn.",
+        );
         setStep(2);
         setIsTimerActive(true);
         setTimeLeft(600);
@@ -138,7 +144,10 @@ export default function ForgotPasswordScreen() {
         alert.showError("Lỗi", getErrorMessage(response));
       }
     } catch (error) {
-      alert.showError("Lỗi hệ thống", "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+      alert.showError(
+        "Lỗi hệ thống",
+        "Không thể kết nối đến máy chủ. Vui lòng thử lại sau.",
+      );
     } finally {
       setLoading(false);
     }
@@ -151,18 +160,31 @@ export default function ForgotPasswordScreen() {
     // Validate inputs
     const otpValidation = validateOTP(otp);
     const passwordValidation = validatePassword(newPassword);
-    const confirmValidation = validateConfirmPassword(newPassword, confirmPassword);
+    const confirmValidation = validateConfirmPassword(
+      newPassword,
+      confirmPassword,
+    );
 
     const newErrors = {
       email: "",
-      otp: otpValidation.isValid ? "" : (otpValidation.message || "Mã OTP không hợp lệ"),
-      newPassword: passwordValidation.isValid ? "" : (passwordValidation.message || "Mật khẩu không hợp lệ"),
-      confirmPassword: confirmValidation.isValid ? "" : (confirmValidation.message || "Mật khẩu không khớp"),
+      otp: otpValidation.isValid
+        ? ""
+        : otpValidation.message || "Mã OTP không hợp lệ",
+      newPassword: passwordValidation.isValid
+        ? ""
+        : passwordValidation.message || "Mật khẩu không hợp lệ",
+      confirmPassword: confirmValidation.isValid
+        ? ""
+        : confirmValidation.message || "Mật khẩu không khớp",
     };
 
     setErrors(newErrors);
 
-    if (!otpValidation.isValid || !passwordValidation.isValid || !confirmValidation.isValid) {
+    if (
+      !otpValidation.isValid ||
+      !passwordValidation.isValid ||
+      !confirmValidation.isValid
+    ) {
       return;
     }
 
@@ -198,12 +220,18 @@ export default function ForgotPasswordScreen() {
       </View>
       <Text style={styles.title}>Quên mật khẩu?</Text>
       <Text style={styles.subtitle}>
-        Đừng lo lắng! Hãy nhập email liên kết với tài khoản của bạn để nhận mã OTP.
+        Đừng lo lắng! Hãy nhập email liên kết với tài khoản của bạn để nhận mã
+        OTP.
       </Text>
 
       <View style={styles.inputContainer}>
         <View style={styles.inputWrapper}>
-          <AntDesign name="user" size={20} color="#94a3b8" style={styles.inputIcon} />
+          <AntDesign
+            name="user"
+            size={20}
+            color="#94a3b8"
+            style={styles.inputIcon}
+          />
           <TextInput
             placeholder="Email Address"
             placeholderTextColor="#94a3b8"
@@ -217,7 +245,9 @@ export default function ForgotPasswordScreen() {
             }}
           />
         </View>
-        {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+        {errors.email ? (
+          <Text style={styles.errorText}>{errors.email}</Text>
+        ) : null}
       </View>
 
       <TouchableOpacity
@@ -237,7 +267,12 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               <Text style={styles.buttonText}>Gửi mã OTP</Text>
-              <AntDesign name="arrow-right" size={18} color="#fff" style={{ marginLeft: 8 }} />
+              <AntDesign
+                name="arrow-right"
+                size={18}
+                color="#fff"
+                style={{ marginLeft: 8 }}
+              />
             </>
           )}
         </LinearGradient>
@@ -256,18 +291,29 @@ export default function ForgotPasswordScreen() {
   const renderResetStep = () => (
     <Animated.View style={[styles.stepContainer, { opacity: fadeAnim }]}>
       <View style={styles.iconCircle}>
-        <MaterialCommunityIcons name="shield-key-outline" size={40} color="#6366f1" />
+        <MaterialCommunityIcons
+          name="shield-key-outline"
+          size={40}
+          color="#6366f1"
+        />
       </View>
       <Text style={styles.title}>Đặt lại mật khẩu</Text>
       <Text style={styles.subtitle}>
-        Mã OTP đã được gửi về email <Text style={styles.emailHighlight}>{email}</Text>. Vui lòng kiểm tra và nhập bên dưới.
+        Mã OTP đã được gửi về email{" "}
+        <Text style={styles.emailHighlight}>{email}</Text>. Vui lòng kiểm tra và
+        nhập bên dưới.
       </Text>
 
       {/* OTP Input */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Mã xác thực (6 chữ số)</Text>
         <View style={styles.inputWrapper}>
-          <AntDesign name="calculator" size={20} color="#94a3b8" style={styles.inputIcon} />
+          <AntDesign
+            name="calculator"
+            size={20}
+            color="#94a3b8"
+            style={styles.inputIcon}
+          />
           <TextInput
             placeholder="Enter 6-digit OTP"
             placeholderTextColor="#94a3b8"
@@ -288,7 +334,12 @@ export default function ForgotPasswordScreen() {
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Mật khẩu mới</Text>
         <View style={styles.inputWrapper}>
-          <AntDesign name="lock" size={20} color="#94a3b8" style={styles.inputIcon} />
+          <AntDesign
+            name="lock"
+            size={20}
+            color="#94a3b8"
+            style={styles.inputIcon}
+          />
           <TextInput
             placeholder="Ít nhất 6 ký tự"
             placeholderTextColor="#94a3b8"
@@ -301,21 +352,28 @@ export default function ForgotPasswordScreen() {
             }}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <IconSymbol 
-              name={showPassword ? "eye" : "eye.slash"} 
-              size={20} 
-              color="#94a3b8" 
+            <IconSymbol
+              name={showPassword ? "eye" : "eye.slash"}
+              size={20}
+              color="#94a3b8"
             />
           </TouchableOpacity>
         </View>
-        {errors.newPassword ? <Text style={styles.errorText}>{errors.newPassword}</Text> : null}
+        {errors.newPassword ? (
+          <Text style={styles.errorText}>{errors.newPassword}</Text>
+        ) : null}
       </View>
 
       {/* Confirm Password */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Xác nhận mật khẩu mới</Text>
         <View style={styles.inputWrapper}>
-          <AntDesign name="lock" size={20} color="#94a3b8" style={styles.inputIcon} />
+          <AntDesign
+            name="lock"
+            size={20}
+            color="#94a3b8"
+            style={styles.inputIcon}
+          />
           <TextInput
             placeholder="Nhập lại mật khẩu mới"
             placeholderTextColor="#94a3b8"
@@ -324,25 +382,33 @@ export default function ForgotPasswordScreen() {
             value={confirmPassword}
             onChangeText={(text) => {
               setConfirmPassword(text);
-              if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: "" });
+              if (errors.confirmPassword)
+                setErrors({ ...errors, confirmPassword: "" });
             }}
           />
-          <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-            <IconSymbol 
-              name={showConfirmPassword ? "eye" : "eye.slash"} 
-              size={20} 
-              color="#94a3b8" 
+          <TouchableOpacity
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <IconSymbol
+              name={showConfirmPassword ? "eye" : "eye.slash"}
+              size={20}
+              color="#94a3b8"
             />
           </TouchableOpacity>
         </View>
-        {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
+        {errors.confirmPassword ? (
+          <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+        ) : null}
       </View>
 
       {/* Timer & Resend */}
       <View style={styles.resendWrapper}>
         <Text style={styles.resendText}>Không nhận được mã?</Text>
         {isTimerActive ? (
-          <Text style={styles.timerText}> Gửi lại sau {formatTime(timeLeft)}</Text>
+          <Text style={styles.timerText}>
+            {" "}
+            Gửi lại sau {formatTime(timeLeft)}
+          </Text>
         ) : (
           <TouchableOpacity onPress={handleSendOTP}>
             <Text style={styles.resendLink}> Gửi lại mã</Text>
@@ -388,7 +454,7 @@ export default function ForgotPasswordScreen() {
           colors={["#f8fafc", "#f1f5f9"]}
           style={StyleSheet.absoluteFill}
         />
-        
+
         {/* Background shapes for Premium look */}
         <View style={styles.bgCircle1} />
         <View style={styles.bgCircle2} />
@@ -583,4 +649,3 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 });
-

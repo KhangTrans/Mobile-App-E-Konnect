@@ -36,6 +36,7 @@ import {
 
 // Import API_BASE_URL để lấy danh mục
 import { API_BASE_URL } from "@/config/config";
+import BannerCarousel from "@/components/home/BannerCarousel";
 
 const { width } = Dimensions.get("window");
 
@@ -337,6 +338,11 @@ export default function ExploreScreen() {
       </View>
 
       {/* =============================================== */}
+      {/* BANNER CAROUSEL: Marketing Banners */}
+      {/* =============================================== */}
+      <BannerCarousel />
+
+      {/* =============================================== */}
       {/* DANH MỤC: Filter ngang có scroll */}
       {/* =============================================== */}
       <View style={styles.categoryFilterContainer}>
@@ -364,9 +370,9 @@ export default function ExploreScreen() {
           </TouchableOpacity>
 
           {/* Các nút danh mục */}
-          {categories.map((cat) => (
+          {categories.map((cat, index) => (
             <TouchableOpacity
-              key={cat._id}
+              key={`${cat._id}-${index}`}
               style={[
                 styles.categoryChip,
                 selectedCategory === cat._id && styles.categoryChipActive,

@@ -15,4 +15,8 @@ export const API_ENDPOINTS = {
     ME: "/api/auth/me",
     GOOGLE_TOKEN: "/api/auth/google/token",
   },
+  BANNERS: {
+    ACTIVE: "/api/product-banners/active",
+    DETAIL: (id: string) => `/api/product-banners/${id}`,
+  },
 };

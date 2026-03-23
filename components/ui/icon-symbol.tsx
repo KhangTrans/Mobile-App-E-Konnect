@@ -119,6 +119,7 @@ const MAPPING = {
   tag: "local-offer",
   "gift.fill": "card-giftcard",
   gift: "card-giftcard",
+  percent: "percent",
 } as const;
 
 type IconSymbolName = keyof typeof MAPPING;
