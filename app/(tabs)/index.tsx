@@ -53,7 +53,7 @@ export default function HomeScreen() {
         <Text style={styles.introDesc}>
           Khám phá bộ sưu tập thiết bị và phụ kiện công nghệ định hình tương lai. Trải nghiệm mua sắm đẳng cấp và khác biệt ngay hôm nay.
         </Text>
-        <TouchableOpacity style={styles.shopButton} onPress={() => router.push('/explore')}>
+        <TouchableOpacity style={styles.shopButton} onPress={() => router.push('/products')}>
           <Text style={styles.shopButtonText}>Bắt Đầu Mua Sắm </Text>
           <Ionicons name="arrow-forward" size={16} color="black" />
         </TouchableOpacity>

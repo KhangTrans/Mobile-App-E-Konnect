@@ -65,7 +65,7 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
 
           let iconName: any = "house.fill";
           if (route.name === "index") iconName = "house.fill";
-          if (route.name === "explore") iconName = "paperplane.fill";
+          if (route.name === "products") iconName = "bag.fill"; // Icon túi mua sắm cho tab Sản Phẩm
           if (route.name === "profile") iconName = "person.fill";
 
           return (
@@ -96,25 +96,27 @@ const styles = StyleSheet.create({
     zIndex: 100,
     // Đổ bóng cho iOS
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
     // Đổ bóng cho Android
-    elevation: 10,
+    elevation: 6,
   },
   tabContent: {
     flexDirection: "row",
     height: 64,
-    backgroundColor: "#1e293b", // Navy đậm hiện đại
+    backgroundColor: "#fff", // Nền trắng
     borderRadius: 32,
     alignItems: "center",
     paddingHorizontal: 5,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   activeIndicator: {
     position: "absolute",
     height: 48,
-    backgroundColor: "#6366f1", // Màu Indigo rực rỡ
+    backgroundColor: "#26C6DA", // Màu xanh Turquoise
     borderRadius: 24,
     marginHorizontal: 5,
   },

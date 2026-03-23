@@ -2,6 +2,7 @@
  * Barrel export for services
  */
 
+// Auth service
 export {
     authService,
     getErrorMessage,
@@ -12,3 +13,27 @@ export type {
     RegisterResponse, ValidationError
 } from "./authService";
 
+// Product service
+export {
+    productService,
+    formatPrice,
+    getProductImageUrl,
+    isLowStock,
+    isOutOfStock,
+} from "./productService";
+export type {
+    Product,
+    ProductImage,
+    ProductVariant,
+    Category,
+    ProductPagination,
+} from "./productService";
+
+// Address service
+export {
+    addressService,
+} from "./addressService";
+export type {
+    CustomerAddress,
+    CreateAddressInput,
+} from "./addressService";
