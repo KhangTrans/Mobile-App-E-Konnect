@@ -583,7 +583,17 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  // --- Thông tin sản phẩm ---
+
+
+
+    // --- Thông tin sản phẩm ---
+
+      // --- Thông tin sản phẩm ---
+
+        // --- Thông tin sản phẩm ---
+
+          // --- Thông tin sản phẩm ---
+
   productInfo: {
     padding: 12,
   },
