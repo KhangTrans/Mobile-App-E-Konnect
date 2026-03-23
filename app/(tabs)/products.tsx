@@ -541,6 +541,7 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     marginBottom: 16,
     overflow: "hidden",
+    flexDirection: "column",
   },
   productCardLast: {
     // Không có margin-right cho item cuối hàng
@@ -583,19 +584,12 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-
-
-
-    // --- Thông tin sản phẩm ---
-
-      // --- Thông tin sản phẩm ---
-
-        // --- Thông tin sản phẩm ---
-
-          // --- Thông tin sản phẩm ---
+  // --- Thông tin sản phẩm ---
 
   productInfo: {
     padding: 12,
+    flex: 1,                        // ← add this
+  justifyContent: "space-between", // ← add this
   },
   productCategory: {
     fontSize: 11,
