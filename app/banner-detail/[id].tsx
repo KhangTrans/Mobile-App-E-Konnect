@@ -1,6 +1,10 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { bannerService, BannerProduct } from "@/services/bannerService";
 import { formatPrice, getProductImageUrl } from "@/services/productService";
+import { cartService } from "@/services/cartService";
+import { TokenManager } from "@/utils/tokenManager";
+import { useAlert } from "@/contexts/AlertContext";
+import { useCartContext } from "@/contexts/CartContext";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -23,6 +27,8 @@ import { Ionicons } from "@expo/vector-icons";
 export default function BannerDetailScreen() {
   const router = useRouter();
   const { id, title } = useLocalSearchParams<{ id: string; title: string }>();
+  const alert = useAlert();
+  const { incrementCartCount } = useCartContext();
   
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<BannerProduct[]>([]);
@@ -47,8 +53,8 @@ export default function BannerDetailScreen() {
    */
   const renderProduct = ({ item }: { item: any }) => {
     const productId = item._id || item.id;
-    // Sử dụng chung hàm lấy ảnh từ productService để hỗ trợ cả 2 format (imageUrl hoặc images[])
     const imageUrl = item.imageUrl || getProductImageUrl(item as any);
+    const outOfStock = item.stock !== undefined && item.stock <= 0;
 
     return (
       <TouchableOpacity 
@@ -64,9 +70,18 @@ export default function BannerDetailScreen() {
              <IconSymbol name="eye.slash" size={32} color="#cbd5e1" />
           </View>
         )}
-        <View style={styles.saleBadge}>
-          <Text style={styles.saleText}>Giảm giá</Text>
-        </View>
+        {outOfStock ? (
+          <>
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
+            <View style={{ position: 'absolute', top: 8, left: 8, backgroundColor: '#94a3b8', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, zIndex: 2 }}>
+              <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>HẾT HÀNG</Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.saleBadge}>
+            <Text style={styles.saleText}>Giảm giá</Text>
+          </View>
+        )}
       </View>
       
       <View style={styles.productInfo}>
@@ -76,16 +91,41 @@ export default function BannerDetailScreen() {
             <Text style={styles.discountedPrice}>{formatPrice(item.discountedPrice)}</Text>
             <Text style={styles.originalPrice}>{formatPrice(item.price)}</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={(e) => {
-               // Prevent parent ripple
-               e.stopPropagation();
-            }}
-          >
-            <Ionicons name="cart-outline" size={16} color="#fff" />
-            <Text style={styles.addButtonText}>Thêm</Text>
-          </TouchableOpacity>
+          {outOfStock ? (
+            <View style={[styles.addButton, { backgroundColor: '#94a3b8' }]}>
+              <Text style={styles.addButtonText}>Hết hàng</Text>
+            </View>
+          ) : (
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={async (e) => {
+                e.stopPropagation();
+                const isLoggedIn = await TokenManager.isLoggedIn();
+                if (!isLoggedIn) {
+                  alert.showAlert({
+                    type: "info",
+                    title: "Yêu cầu đăng nhập",
+                    message: "Bạn cần đăng nhập để mua hàng.",
+                    buttons: [
+                      { text: "Đóng", style: "cancel" },
+                      { text: "Đăng nhập", onPress: () => router.push("/(auth)/login" as any) },
+                    ],
+                  });
+                  return;
+                }
+                const res = await cartService.addToCart(productId, 1);
+                if (res.success) {
+                  incrementCartCount(1);
+                  alert.showSuccess("Thành công", `Đã thêm ${item.name} vào giỏ hàng`);
+                } else {
+                  alert.showError("Lỗi", res.error || "Thêm sản phẩm thất bại");
+                }
+              }}
+            >
+              <Ionicons name="cart-outline" size={16} color="#fff" />
+              <Text style={styles.addButtonText}>Thêm</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </TouchableOpacity>

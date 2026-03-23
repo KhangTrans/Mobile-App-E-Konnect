@@ -50,6 +50,18 @@ export interface BuyNowPayload {
   paymentMethod: "cod";
 }
 
+export interface CheckoutCartPayload {
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  shippingAddress: string;
+  shippingCity: string;
+  shippingDistrict?: string;
+  shippingWard?: string;
+  shippingNote?: string;
+  paymentMethod: "cod";
+}
+
 export interface OrderItem {
   productId: string | { _id: string; name?: string };
   productName: string;
@@ -107,6 +119,21 @@ export const orderService = {
     try {
       const response = await apiClient.post<ApiResponse<Order>>(
         "/buy-now",
+        payload,
+      );
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  checkoutCart: async (payload: CheckoutCartPayload): Promise<ApiResponse<Order>> => {
+    try {
+      const response = await apiClient.post<ApiResponse<Order>>(
+        "/",
         payload,
       );
       return response.data;

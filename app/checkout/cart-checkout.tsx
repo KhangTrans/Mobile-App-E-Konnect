@@ -15,10 +15,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAlert } from "@/contexts/AlertContext";
+import { useCartContext } from "@/contexts/CartContext";
 import { addressService, productService, getProductImageUrl } from "@/services";
 import { orderService } from "@/services/orderService";
 import { TokenManager } from "@/utils/tokenManager";
-import type { Product } from "@/services/productService";
+import { cartService, CartData } from "@/services/cartService";
 
 interface CheckoutForm {
   customerName: string;
@@ -41,16 +42,12 @@ const getShippingFee = (subtotal: number): number => {
   return subtotal >= 500000 ? 0 : DEFAULT_SHIPPING_FEE;
 };
 
-export default function CodCheckoutScreen() {
+export default function CartCheckoutScreen() {
   const router = useRouter();
   const alert = useAlert();
-  const { productId, quantity } = useLocalSearchParams<{
-    productId?: string;
-    quantity?: string;
-  }>();
+  const { clearCartCount } = useCartContext();
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [itemQuantity, setItemQuantity] = useState(1);
+  const [cartData, setCartData] = useState<CartData | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -67,17 +64,7 @@ export default function CodCheckoutScreen() {
 
   useEffect(() => {
     const initCheckout = async () => {
-      if (!productId) {
-        alert.showError("Thiếu dữ liệu", "Không xác định được sản phẩm cần thanh toán.");
-        router.back();
-        return;
-      }
-
-      const parsedQuantity = Number(quantity);
-      const safeQuantity = Number.isFinite(parsedQuantity) && parsedQuantity > 0 ? Math.floor(parsedQuantity) : 1;
-
       setLoading(true);
-      setItemQuantity(safeQuantity);
 
       try {
         const token = await TokenManager.getToken();
@@ -87,29 +74,28 @@ export default function CodCheckoutScreen() {
           return;
         }
 
-        const [productRes, userData, defaultAddressRes] = await Promise.all([
-          productService.getProductById(productId),
+        const [cartRes, userData, defaultAddressRes] = await Promise.all([
+          cartService.getCart(),
           TokenManager.getUserData(),
           addressService.getDefaultAddress(),
         ]);
 
         let defaultAddr = defaultAddressRes.success ? defaultAddressRes.data : null;
         if (!defaultAddr) {
+          // Fallback to first address if no default address is explicitly set
           const allAddrRes = await addressService.getAddresses();
           if (allAddrRes.success && allAddrRes.data?.length) {
             defaultAddr = allAddrRes.data[0];
           }
         }
 
-        if (!productRes.success || !productRes.data) {
-          alert.showError("Lỗi", "Không tải được thông tin sản phẩm.");
+        if (!cartRes.success || !cartRes.data || !cartRes.data.items?.length) {
+          alert.showError("Lỗi", "Giỏ hàng trống.");
           router.back();
           return;
         }
 
-        const loadedProduct = productRes.data;
-        setProduct(loadedProduct);
-        setItemQuantity((prev) => Math.min(prev, Math.max(1, loadedProduct.stock)));
+        setCartData(cartRes.data);
 
         setForm((prev) => ({
           ...prev,
@@ -131,12 +117,17 @@ export default function CodCheckoutScreen() {
     };
 
     initCheckout();
-  }, [alert, productId, quantity, router]);
+  }, [alert, router]);
 
+  // Handle derived cart state from response
+  // Since cart API returns cart object and summary conditionally based on backend
   const subtotal = useMemo(() => {
-    if (!product) return 0;
-    return product.price * itemQuantity;
-  }, [product, itemQuantity]);
+    // If the data is parsed as { items: [] } directly
+    if (cartData?.items) {
+      return cartData.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+    return 0;
+  }, [cartData]);
 
   const shippingFee = useMemo(() => getShippingFee(subtotal), [subtotal]);
   const total = useMemo(() => subtotal + shippingFee, [shippingFee, subtotal]);
@@ -145,28 +136,9 @@ export default function CodCheckoutScreen() {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const decreaseQuantity = () => {
-    setItemQuantity((prev) => Math.max(1, prev - 1));
-  };
-
-  const increaseQuantity = () => {
-    if (!product) return;
-    setItemQuantity((prev) => Math.min(product.stock, prev + 1));
-  };
-
   const validateForm = (): boolean => {
-    if (!product) {
-      alert.showError("Lỗi", "Không có thông tin sản phẩm để thanh toán.");
-      return false;
-    }
-
-    if (product.stock <= 0) {
-      alert.showError("Hết hàng", "Sản phẩm hiện đã hết hàng.");
-      return false;
-    }
-
-    if (itemQuantity > product.stock) {
-      alert.showError("Vượt tồn kho", `Số lượng tối đa còn lại là ${product.stock}.`);
+    if (!cartData || !cartData.items?.length) {
+      alert.showError("Lỗi", "Giỏ hàng của bạn đang trống.");
       return false;
     }
 
@@ -184,13 +156,11 @@ export default function CodCheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!productId || !validateForm()) return;
+    if (!validateForm()) return;
 
     setSubmitting(true);
     try {
-      const response = await orderService.buyNow({
-        productId,
-        quantity: itemQuantity,
+      const response = await orderService.checkoutCart({
         customerName: form.customerName.trim(),
         customerEmail: form.customerEmail.trim(),
         customerPhone: form.customerPhone.trim(),
@@ -203,6 +173,7 @@ export default function CodCheckoutScreen() {
       });
 
       if (response.success && response.data) {
+        clearCartCount();
         router.replace({
           pathname: "/orders/success",
           params: {
@@ -214,9 +185,9 @@ export default function CodCheckoutScreen() {
         return;
       }
 
-      alert.showError("Đặt hàng thất bại", response.message || "Không thể tạo đơn hàng COD.");
+      alert.showError("Đặt hàng thất bại", response.message || "Không thể tạo đơn hàng COD từ giỏ hàng.");
     } catch (error: any) {
-      console.error("Create COD order error:", error);
+      console.error("Create Cart COD order error:", error);
       alert.showError(
         "Lỗi kết nối",
         error?.response?.data?.message || "Không thể kết nối tới máy chủ.",
@@ -235,12 +206,12 @@ export default function CodCheckoutScreen() {
     );
   }
 
-  if (!product) {
+  if (!cartData || cartData.items.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>Không tìm thấy sản phẩm để thanh toán.</Text>
+        <Text style={styles.errorText}>Không tìm thấy sản phẩm trong giỏ hàng để thanh toán.</Text>
         <TouchableOpacity onPress={() => router.back()} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Quay lại</Text>
+          <Text style={styles.secondaryButtonText}>Quay lại giỏ hàng</Text>
         </TouchableOpacity>
       </View>
     );
@@ -262,31 +233,31 @@ export default function CodCheckoutScreen() {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Sản phẩm</Text>
-          <View style={styles.productRow}>
-            <Image
-              source={{ uri: getProductImageUrl(product) || "https://via.placeholder.com/120" }}
-              style={styles.productImage}
-            />
-            <View style={styles.productInfo}>
-              <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-              <Text style={styles.productPrice}>{formatCurrency(product.price)}</Text>
-              <Text style={styles.productStock}>Còn lại: {product.stock}</Text>
-            </View>
-          </View>
-
-          <View style={styles.quantityRow}>
-            <Text style={styles.inputLabel}>Số lượng</Text>
-            <View style={styles.quantityBox}>
-              <TouchableOpacity style={styles.quantityButton} onPress={decreaseQuantity}>
-                <Ionicons name="remove" size={18} color="#1E3A5F" />
-              </TouchableOpacity>
-              <Text style={styles.quantityText}>{itemQuantity}</Text>
-              <TouchableOpacity style={styles.quantityButton} onPress={increaseQuantity}>
-                <Ionicons name="add" size={18} color="#1E3A5F" />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <Text style={styles.cardTitle}>Sản phẩm trong giỏ</Text>
+          {cartData.items.map((item, index) => {
+            const activeProduct = typeof item.productId === 'object' ? item.productId : null;
+            const name = activeProduct?.name || 'Sản phẩm không rõ';
+            
+            // Lấy ảnh hiển thị
+            let imageUri = 'https://via.placeholder.com/84';
+            if (activeProduct) {
+              imageUri = getProductImageUrl(activeProduct as any);
+            }
+            
+            return (
+              <View style={styles.productRow} key={item._id || index}>
+                <Image
+                  source={{ uri: imageUri }}
+                  style={styles.productImage}
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName} numberOfLines={2}>{name}</Text>
+                  <Text style={styles.productPrice}>{formatCurrency(item.price)}</Text>
+                  <Text style={styles.productStock}>Số lượng: {item.quantity}</Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
 
         <View style={styles.card}>
