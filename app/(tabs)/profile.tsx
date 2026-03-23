@@ -1,22 +1,24 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAlert } from "@/contexts/AlertContext";
+import { useCart } from "@/contexts/CartContext";
 import { authService } from "@/services/authService";
 import { TokenManager, UserData } from "@/utils/tokenManager";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const alert = useAlert();
+  const { reloadCart } = useCart();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,7 +76,9 @@ export default function ProfileScreen() {
       "Bạn có chắc chắn muốn đăng xuất?",
       async () => {
         try {
+          // Khong xoa cart da luu cua user, chi clear auth va reload theo guest
           await TokenManager.clearAuthData();
+          await reloadCart();
           router.replace("/(auth)/login");
         } catch (err) {
           console.error("Logout error:", err);

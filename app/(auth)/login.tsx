@@ -1,5 +1,6 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAlert } from "@/contexts/AlertContext";
+import { useCart } from "@/contexts/CartContext";
 import { authService, getErrorMessage } from "@/services/authService";
 import { TokenManager } from "@/utils/tokenManager";
 import { validateEmail, validatePassword } from "@/utils/validation";
@@ -20,6 +21,7 @@ import {
 export default function LoginScreen() {
   const router = useRouter();
   const alert = useAlert();
+  const { reloadCart } = useCart();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,6 +48,7 @@ export default function LoginScreen() {
         const response = await authService.getMe();
 
         if (response.success && response.data) {
+          await reloadCart();
           // User is still logged in, redirect to home
           router.replace("/(tabs)");
           return;
@@ -124,6 +127,8 @@ export default function LoginScreen() {
           response.data.token,
           response.data.user,
         );
+
+        await reloadCart();
 
         // Navigate to home screen
         router.replace("/(tabs)");

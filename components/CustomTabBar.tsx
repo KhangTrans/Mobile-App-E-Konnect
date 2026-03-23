@@ -5,15 +5,20 @@ import Animated, {
   useAnimatedStyle, 
   withSpring, 
 } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { IconSymbol } from "./ui/icon-symbol";
 import * as Haptics from "expo-haptics";
+import { useCart } from "@/contexts/CartContext";
 
 const { width } = Dimensions.get("window");
 const MARGIN = 20;
 const TAB_BAR_WIDTH = width - MARGIN * 2;
 
-export function CustomTabBar({ state, descriptors, navigation }: any) {
+export function CustomTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { cartCount } = useCart();
   const tabWidth = TAB_BAR_WIDTH / state.routes.length;
 
   // Animation cho thanh chạy (indicator)
@@ -45,7 +50,6 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
         ]} />
 
         {state.routes.map((route: any, index: number) => {
-          const { options } = descriptors[route.key];
           const isFocused = state.index === index;
 
           const onPress = () => {
@@ -83,6 +87,25 @@ export function CustomTabBar({ state, descriptors, navigation }: any) {
             </TouchableOpacity>
           );
         })}
+
+        <TouchableOpacity
+          onPress={() => router.push("/cart")}
+          style={styles.cartButton}
+          activeOpacity={0.75}
+        >
+          <Ionicons
+            name="cart-outline"
+            size={24}
+            color={cartCount > 0 ? "#26C6DA" : "#94a3b8"}
+          />
+          {cartCount > 0 && (
+            <View style={styles.cartBadge}>
+              <Animated.Text style={styles.cartBadgeText}>
+                {cartCount > 99 ? "99+" : cartCount.toString()}
+              </Animated.Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -125,5 +148,32 @@ const styles = StyleSheet.create({
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
+  },
+  cartButton: {
+    position: "absolute",
+    right: 16,
+    top: "50%",
+    transform: [{ translateY: -20 }],
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cartBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#ef4444",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 3,
+  },
+  cartBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#fff",
   }
 });

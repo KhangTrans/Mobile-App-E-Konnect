@@ -11,6 +11,17 @@ const USER_DATA_KEY = "userData";
 // Fallback in-memory storage for when AsyncStorage fails
 let memoryStorage: { [key: string]: string } = {};
 let useMemoryStorage = false;
+let hasLoggedAsyncStorageWarning = false;
+
+const activateMemoryFallback = () => {
+  if (!hasLoggedAsyncStorageWarning) {
+    console.warn(
+      "[TokenManager] AsyncStorage that bai, chuyen sang memory storage - cart se bi mat khi tat app!",
+    );
+    hasLoggedAsyncStorageWarning = true;
+  }
+  useMemoryStorage = true;
+};
 
 export interface UserData {
   id: string;
@@ -38,8 +49,7 @@ export const TokenManager = {
         await AsyncStorage.setItem(TOKEN_KEY, token);
       }
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       memoryStorage[TOKEN_KEY] = token;
     }
   },
@@ -54,8 +64,7 @@ export const TokenManager = {
       }
       return await AsyncStorage.getItem(TOKEN_KEY);
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       return memoryStorage[TOKEN_KEY] || null;
     }
   },
@@ -73,8 +82,7 @@ export const TokenManager = {
         await AsyncStorage.removeItem(USER_DATA_KEY);
       }
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       delete memoryStorage[TOKEN_KEY];
       delete memoryStorage[USER_DATA_KEY];
     }
@@ -91,8 +99,7 @@ export const TokenManager = {
         await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
       }
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       memoryStorage[USER_DATA_KEY] = JSON.stringify(user);
     }
   },
@@ -109,8 +116,7 @@ export const TokenManager = {
       const data = await AsyncStorage.getItem(USER_DATA_KEY);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       const data = memoryStorage[USER_DATA_KEY];
       return data ? JSON.parse(data) : null;
     }
@@ -127,8 +133,7 @@ export const TokenManager = {
       const token = await AsyncStorage.getItem(TOKEN_KEY);
       return !!token;
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       return !!memoryStorage[TOKEN_KEY];
     }
   },
@@ -146,8 +151,7 @@ export const TokenManager = {
         await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
       }
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       memoryStorage[TOKEN_KEY] = token;
       memoryStorage[USER_DATA_KEY] = JSON.stringify(user);
     }
@@ -166,8 +170,7 @@ export const TokenManager = {
         await AsyncStorage.removeItem(USER_DATA_KEY);
       }
     } catch (error) {
-      console.warn("AsyncStorage failed, using memory storage");
-      useMemoryStorage = true;
+      activateMemoryFallback();
       delete memoryStorage[TOKEN_KEY];
       delete memoryStorage[USER_DATA_KEY];
     }

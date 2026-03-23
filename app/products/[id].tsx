@@ -18,18 +18,18 @@ import {
   ActivityIndicator,
   TextInput,
   FlatList,
-  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useCart } from "@/contexts/CartContext";
+import { useAlert } from "@/contexts/AlertContext";
 
 // Import service đã có sẵn
 import {
   productService,
   formatPrice,
   getProductImageUrl,
-  isLowStock,
   isOutOfStock,
   type Product,
 } from "@/services/productService";
@@ -45,6 +45,8 @@ export default function ProductDetailScreen() {
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { addToCart } = useCart();
+  const { showSuccess } = useAlert();
 
   // --- State: thông tin sản phẩm ---
   const [product, setProduct] = useState<Product | null>(null);
@@ -138,19 +140,21 @@ export default function ProductDetailScreen() {
   };
 
   // ============================================================
-  // XỬ LÝ: THÊM VÀO GIỎ HÀNG (tạm thời - chưa có cart service)
+  // XỬ LÝ: THÊM VÀO GIỎ HÀNG
   // ============================================================
   const handleAddToCart = () => {
-    // TODO: Khi có cart service thì thay bằng API thực tế
-    alert(`Đã thêm ${quantity} sản phẩm "${product?.name}" vào giỏ hàng!`);
+    if (!product) return;
+    addToCart(product, quantity);
+    showSuccess("Đã thêm vào giỏ hàng", `${quantity} x ${product.name}`, true);
   };
 
   // ============================================================
-  // XỬ LÝ: MUA NGAY (tạm thời)
+  // XỬ LÝ: MUA NGAY
   // ============================================================
   const handleBuyNow = () => {
-    // TODO: Khi có cart/checkout thì chuyển hướng sang trang thanh toán
-    alert(`Mua ngay ${quantity} sản phẩm "${product?.name}"!`);
+    if (!product) return;
+    addToCart(product, quantity);
+    router.push("/cart");
   };
 
   // ============================================================

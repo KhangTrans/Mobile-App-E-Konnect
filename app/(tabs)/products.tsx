@@ -23,6 +23,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useCart } from "@/contexts/CartContext";
+import { useAlert } from "@/contexts/AlertContext";
 
 // Import service và kiểu dữ liệu
 import {
@@ -31,7 +33,6 @@ import {
   getProductImageUrl,
   isLowStock,
   type Product,
-  type Category,
 } from "@/services/productService";
 
 // Import API_BASE_URL để lấy danh mục
@@ -62,6 +63,8 @@ interface CategoryFilter {
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { addToCart } = useCart();
+  const { showSuccess } = useAlert();
 
   // --- State: danh sách sản phẩm ---
   const [products, setProducts] = useState<Product[]>([]);
@@ -275,7 +278,18 @@ export default function ExploreScreen() {
           {/* Giá + Nút Thêm */}
           <View style={styles.productFooter}>
             <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
-            <TouchableOpacity style={styles.addButton}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                addToCart(item, 1);
+                showSuccess(
+                  "Đã thêm vào giỏ",
+                  `${item.name} đã được thêm vào giỏ hàng`,
+                  true
+                );
+              }}
+            >
               <Ionicons name="cart-outline" size={16} color="#fff" />
               <Text style={styles.addButtonText}>Thêm</Text>
             </TouchableOpacity>
