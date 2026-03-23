@@ -50,3 +50,11 @@ export type {
     PaymentStatus,
     MyOrdersResponse,
 } from "./orderService";
+
+// Voucher service
+export {
+    voucherService,
+} from "./voucherService";
+export type {
+    Voucher,
+} from "./voucherService";

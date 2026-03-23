@@ -10,15 +10,17 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAlert } from "@/contexts/AlertContext";
-import { addressService, productService, getProductImageUrl } from "@/services";
+import { addressService, productService, getProductImageUrl, voucherService } from "@/services";
 import { orderService } from "@/services/orderService";
 import { TokenManager } from "@/utils/tokenManager";
 import type { Product } from "@/services/productService";
+import type { Voucher } from "@/services/voucherService";
 
 interface CheckoutForm {
   customerName: string;
@@ -54,6 +56,12 @@ export default function CodCheckoutScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const [publicVouchers, setPublicVouchers] = useState<Voucher[]>([]);
+  const [myVouchers, setMyVouchers] = useState<Voucher[]>([]);
+  const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [collectingVoucherId, setCollectingVoucherId] = useState<string | null>(null);
+
   const [form, setForm] = useState<CheckoutForm>({
     customerName: "",
     customerEmail: "",
@@ -87,10 +95,12 @@ export default function CodCheckoutScreen() {
           return;
         }
 
-        const [productRes, userData, defaultAddressRes] = await Promise.all([
+        const [productRes, userData, defaultAddressRes, publicVouchersRes, myVouchersRes] = await Promise.all([
           productService.getProductById(productId),
           TokenManager.getUserData(),
           addressService.getDefaultAddress(),
+          voucherService.getPublicVouchers().catch(() => ({ success: false, data: [] })),
+          voucherService.getMyVouchers().catch(() => ({ success: false, data: [] })),
         ]);
 
         if (!productRes.success || !productRes.data) {
@@ -113,6 +123,13 @@ export default function CodCheckoutScreen() {
           shippingDistrict: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.district || "" : "",
           shippingWard: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.ward || "" : "",
         }));
+
+        if (publicVouchersRes.success && publicVouchersRes.data) {
+          setPublicVouchers(publicVouchersRes.data);
+        }
+        if (myVouchersRes.success && myVouchersRes.data) {
+          setMyVouchers(myVouchersRes.data);
+        }
       } catch (error) {
         console.error("Init checkout error:", error);
         alert.showError("Lỗi", "Không thể khởi tạo thông tin thanh toán.");
@@ -130,8 +147,45 @@ export default function CodCheckoutScreen() {
     return product.price * itemQuantity;
   }, [product, itemQuantity]);
 
-  const shippingFee = useMemo(() => getShippingFee(subtotal), [subtotal]);
-  const total = useMemo(() => subtotal + shippingFee, [shippingFee, subtotal]);
+  const shippingFee = useMemo(() => {
+    let fee = getShippingFee(subtotal);
+    if (selectedVoucher && selectedVoucher.type === "FREE_SHIP") {
+      fee = 0;
+    }
+    return fee;
+  }, [subtotal, selectedVoucher]);
+
+  const discountValue = useMemo(() => {
+    if (!selectedVoucher || selectedVoucher.type !== "DISCOUNT") return 0;
+    let discount = (subtotal * selectedVoucher.discountPercent) / 100;
+    if (selectedVoucher.maxDiscount) {
+      discount = Math.min(discount, selectedVoucher.maxDiscount);
+    }
+    return discount;
+  }, [subtotal, selectedVoucher]);
+
+  const total = useMemo(() => subtotal + shippingFee - discountValue, [shippingFee, subtotal, discountValue]);
+
+  const handleCollectVoucher = async (voucher: Voucher) => {
+    if (collectingVoucherId) return;
+    try {
+      setCollectingVoucherId(voucher._id);
+      const res = await voucherService.collectVoucher(voucher._id);
+      if (res.success) {
+        alert.showSuccess("Thành công", "Đã lưu voucher vào ví");
+        const myRes = await voucherService.getMyVouchers();
+        if (myRes.success && myRes.data) {
+          setMyVouchers(myRes.data);
+        }
+      } else {
+        alert.showError("Thất bại", res.message || "Không thể lưu voucher");
+      }
+    } catch (e: any) {
+      alert.showError("Lỗi", e?.response?.data?.message || "Không thể lưu voucher");
+    } finally {
+      setCollectingVoucherId(null);
+    }
+  };
 
   const updateForm = (key: keyof CheckoutForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -192,6 +246,7 @@ export default function CodCheckoutScreen() {
         shippingWard: form.shippingWard.trim() || undefined,
         shippingNote: form.shippingNote.trim() || undefined,
         paymentMethod: "cod",
+        voucherIds: selectedVoucher ? [selectedVoucher._id] : undefined,
       });
 
       if (response.success && response.data) {
@@ -370,12 +425,31 @@ export default function CodCheckoutScreen() {
         </View>
 
         <View style={styles.card}>
+          <View style={styles.voucherHeaderRow}>
+            <Ionicons name="ticket-outline" size={20} color="#26C6DA" />
+            <Text style={[styles.cardTitle, { marginBottom: 0, marginLeft: 8 }]}>Voucher / Mã giảm giá</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.voucherSelectButton}
+            onPress={() => setShowVoucherModal(true)}
+          >
+            <Text style={selectedVoucher ? styles.voucherSelectedText : styles.voucherSelectText}>
+              {selectedVoucher ? `Đã chọn: ${selectedVoucher.code}` : "Chọn hoặc nhập mã"}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color="#64748B" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardTitle}>Tóm tắt đơn hàng</Text>
           <SummaryRow label="Tạm tính" value={formatCurrency(subtotal)} />
           <SummaryRow
             label="Phí vận chuyển"
             value={shippingFee === 0 ? "Miễn phí" : formatCurrency(shippingFee)}
           />
+          {discountValue > 0 && (
+            <SummaryRow label="Giảm giá voucher" value={`-${formatCurrency(discountValue)}`} highlightValue="#10B981" />
+          )}
           <View style={styles.summaryDivider} />
           <SummaryRow label="Tổng thanh toán" value={formatCurrency(total)} highlight />
         </View>
@@ -384,6 +458,10 @@ export default function CodCheckoutScreen() {
       </ScrollView>
 
       <View style={styles.footerAction}>
+        <View style={styles.footerTotalBox}>
+          <Text style={styles.footerTotalLabel}>Tổng thanh toán</Text>
+          <Text style={styles.footerTotalValue}>{formatCurrency(total)}</Text>
+        </View>
         <TouchableOpacity
           style={[styles.primaryButton, submitting && styles.buttonDisabled]}
           onPress={handlePlaceOrder}
@@ -396,6 +474,102 @@ export default function CodCheckoutScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={showVoucherModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowVoucherModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn Voucher</Text>
+              <TouchableOpacity onPress={() => setShowVoucherModal(false)}>
+                <Ionicons name="close" size={24} color="#1E293B" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.voucherList}>
+              <Text style={styles.voucherSectionTitle}>Voucher của bạn</Text>
+              {myVouchers.length === 0 ? (
+                <Text style={styles.emptyVoucherText}>Bạn chưa có voucher nào.</Text>
+              ) : (
+                myVouchers.map((voucher) => {
+                  const isApplicable = subtotal >= voucher.minOrderAmount;
+                  const isSelected = selectedVoucher?._id === voucher._id;
+                  return (
+                    <TouchableOpacity
+                      key={voucher._id}
+                      style={[
+                        styles.voucherItem,
+                        isSelected && styles.voucherItemSelected,
+                        !isApplicable && styles.voucherItemDisabled
+                      ]}
+                      disabled={!isApplicable}
+                      onPress={() => {
+                        setSelectedVoucher(isSelected ? null : voucher);
+                        setShowVoucherModal(false);
+                      }}
+                    >
+                      <View style={styles.voucherIconBox}>
+                        <Ionicons name={voucher.type === "DISCOUNT" ? "pricetag" : "car"} size={24} color="#0EA5E9" />
+                      </View>
+                      <View style={styles.voucherInfo}>
+                        <Text style={styles.voucherCode}>{voucher.code}</Text>
+                        <Text style={styles.voucherDesc}>{voucher.description}</Text>
+                        <Text style={styles.voucherMinOrder}>Đơn tối thiểu {formatCurrency(voucher.minOrderAmount)}</Text>
+                      </View>
+                      <View style={styles.voucherAction}>
+                        {!isApplicable ? (
+                          <Text style={styles.voucherUnapplicableText}>Chưa đạt đ/k</Text>
+                        ) : isSelected ? (
+                          <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                        ) : (
+                          <Text style={styles.voucherUseText}>Dùng ngay</Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })
+              )}
+
+              <Text style={[styles.voucherSectionTitle, { marginTop: 20 }]}>Có thể bạn quan tâm</Text>
+              {publicVouchers.filter(pv => !myVouchers.find(mv => mv._id === pv._id)).length === 0 ? (
+                <Text style={styles.emptyVoucherText}>Không có voucher mới.</Text>
+              ) : (
+                publicVouchers
+                  .filter(pv => !myVouchers.find(mv => mv._id === pv._id))
+                  .map((voucher) => (
+                    <View key={voucher._id} style={styles.voucherItem}>
+                      <View style={styles.voucherIconBox}>
+                        <Ionicons name={voucher.type === "DISCOUNT" ? "pricetag" : "car"} size={24} color="#0EA5E9" />
+                      </View>
+                      <View style={styles.voucherInfo}>
+                        <Text style={styles.voucherCode}>{voucher.code}</Text>
+                        <Text style={styles.voucherDesc}>{voucher.description}</Text>
+                        <Text style={styles.voucherMinOrder}>Đơn tối thiểu {formatCurrency(voucher.minOrderAmount)}</Text>
+                      </View>
+                      <View style={styles.voucherAction}>
+                        <TouchableOpacity 
+                          style={styles.saveVoucherButton}
+                          onPress={() => handleCollectVoucher(voucher)}
+                          disabled={collectingVoucherId === voucher._id}
+                        >
+                          {collectingVoucherId === voucher._id ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Text style={styles.saveVoucherText}>Lưu</Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -404,15 +578,17 @@ function SummaryRow({
   label,
   value,
   highlight = false,
+  highlightValue,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
+  highlightValue?: string;
 }) {
   return (
     <View style={styles.summaryRow}>
       <Text style={[styles.summaryLabel, highlight && styles.summaryLabelHighlight]}>{label}</Text>
-      <Text style={[styles.summaryValue, highlight && styles.summaryValueHighlight]}>{value}</Text>
+      <Text style={[styles.summaryValue, highlight && styles.summaryValueHighlight, highlightValue ? { color: highlightValue } : {}]}>{value}</Text>
     </View>
   );
 }
@@ -651,5 +827,157 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.7,
+  },
+  voucherHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  voucherSelectButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#F8FAFC",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  voucherSelectText: {
+    fontSize: 14,
+    color: "#64748B",
+  },
+  voucherSelectedText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0EA5E9",
+  },
+  footerTotalBox: {
+    marginBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  footerTotalLabel: {
+    fontSize: 14,
+    color: "#64748B",
+  },
+  footerTotalValue: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#0E7490",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
+    paddingBottom: Platform.OS === "ios" ? 40 : 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  voucherList: {
+    padding: 16,
+  },
+  voucherSectionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E3A5F",
+    marginBottom: 12,
+  },
+  emptyVoucherText: {
+    fontSize: 14,
+    color: "#94A3B8",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginVertical: 12,
+  },
+  voucherItem: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 10,
+    overflow: "hidden",
+  },
+  voucherItemSelected: {
+    borderColor: "#0EA5E9",
+    backgroundColor: "#F0F9FF",
+  },
+  voucherItemDisabled: {
+    opacity: 0.6,
+  },
+  voucherIconBox: {
+    width: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#E0F2FE",
+    borderRightWidth: 1,
+    borderRightColor: "#E2E8F0",
+    borderStyle: "dashed",
+  },
+  voucherInfo: {
+    flex: 1,
+    padding: 12,
+  },
+  voucherCode: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  voucherDesc: {
+    fontSize: 12,
+    color: "#475569",
+    marginTop: 4,
+  },
+  voucherMinOrder: {
+    fontSize: 11,
+    color: "#94A3B8",
+    marginTop: 6,
+  },
+  voucherAction: {
+    width: 80,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 8,
+  },
+  saveVoucherButton: {
+    backgroundColor: "#0EA5E9",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  saveVoucherText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  voucherUseText: {
+    color: "#0EA5E9",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  voucherUnapplicableText: {
+    color: "#94A3B8",
+    fontSize: 11,
+    textAlign: "center",
   },
 });

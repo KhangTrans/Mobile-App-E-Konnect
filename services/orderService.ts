@@ -48,6 +48,7 @@ export interface BuyNowPayload {
   shippingWard?: string;
   shippingNote?: string;
   paymentMethod: "cod";
+  voucherIds?: string[];
 }
 
 export interface OrderItem {
