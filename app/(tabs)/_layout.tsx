@@ -1,5 +1,6 @@
 import { CustomTabBar } from "@/components/CustomTabBar";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useCartContext } from "@/contexts/CartContext";
 import { useNotification } from "@/contexts/NotificationContext";
 import { Tabs, useRouter } from "expo-router";
 import React from "react";
@@ -10,6 +11,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { unreadCount } = useNotification();
+  const { cartCount } = useCartContext();
 
   return (
     <View style={styles.container}>
@@ -40,20 +42,37 @@ export default function TabLayout() {
         />
       </Tabs>
 
-      <TouchableOpacity
-        style={[styles.notificationButton, { top: insets.top + 8 }]}
-        onPress={() => router.push("/notifications")}
-        activeOpacity={0.75}
-      >
-        <IconSymbol name="bell.fill" size={22} color="#26C6DA" />
-        {unreadCount > 0 ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </Text>
-          </View>
-        ) : null}
-      </TouchableOpacity>
+      <View style={[styles.iconButtonsRow, { top: insets.top + 8 }]}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => router.push("/cart")}
+          activeOpacity={0.75}
+        >
+          <IconSymbol name="cart.fill" size={22} color="#1E3A5F" />
+          {cartCount > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {cartCount > 99 ? "99+" : cartCount}
+              </Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => router.push("/notifications")}
+          activeOpacity={0.75}
+        >
+          <IconSymbol name="bell.fill" size={22} color="#26C6DA" />
+          {unreadCount > 0 ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -62,9 +81,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  notificationButton: {
+  iconButtonsRow: {
     position: "absolute",
     right: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    zIndex: 20,
+  },
+  iconButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -78,7 +103,7 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    zIndex: 20,
+    position: "relative",
   },
   badge: {
     position: "absolute",

@@ -1,15 +1,15 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { AlertProvider } from "@/contexts/AlertContext";
-import { NotificationProvider } from "@/contexts/NotificationContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
