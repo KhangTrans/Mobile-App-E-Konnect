@@ -37,3 +37,16 @@ export type {
     CustomerAddress,
     CreateAddressInput,
 } from "./addressService";
+
+// Order service
+export {
+    orderService,
+} from "./orderService";
+export type {
+    BuyNowPayload,
+    Order,
+    OrderItem,
+    OrderStatus,
+    PaymentStatus,
+    MyOrdersResponse,
+} from "./orderService";

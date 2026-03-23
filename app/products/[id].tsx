@@ -18,7 +18,6 @@ import {
   ActivityIndicator,
   TextInput,
   FlatList,
-  Linking,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -146,11 +145,18 @@ export default function ProductDetailScreen() {
   };
 
   // ============================================================
-  // XỬ LÝ: MUA NGAY (tạm thời)
+  // XỬ LÝ: MUA NGAY
   // ============================================================
   const handleBuyNow = () => {
-    // TODO: Khi có cart/checkout thì chuyển hướng sang trang thanh toán
-    alert(`Mua ngay ${quantity} sản phẩm "${product?.name}"!`);
+    if (!id || !product) return;
+
+    router.push({
+      pathname: "/checkout/cod",
+      params: {
+        productId: id,
+        quantity: String(quantity),
+      },
+    });
   };
 
   // ============================================================
