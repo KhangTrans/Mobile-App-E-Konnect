@@ -6,32 +6,36 @@
  * Gọi API: GET /api/products/:id
  */
 
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  ActivityIndicator,
-  TextInput,
-  FlatList,
-} from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  Alert,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import service đã có sẵn
 import {
-  productService,
   formatPrice,
   getProductImageUrl,
-  isLowStock,
   isOutOfStock,
+  productService,
   type Product,
 } from "@/services/productService";
+import { cartService } from "@/services/cartService";
+import { TokenManager } from "@/utils/tokenManager";
+import { useAlert } from "@/contexts/AlertContext";
+import { useCartContext } from "@/contexts/CartContext";
 
 const { width } = Dimensions.get("window");
 
@@ -44,6 +48,8 @@ export default function ProductDetailScreen() {
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const alert = useAlert();
+  const { cartCount, incrementCartCount } = useCartContext();
 
   // --- State: thông tin sản phẩm ---
   const [product, setProduct] = useState<Product | null>(null);
@@ -100,7 +106,10 @@ export default function ProductDetailScreen() {
   // ============================================================
   // LẤY SẢN PHẨM TƯƠNG TỰ (cùng danh mục)
   // ============================================================
-  const fetchSimilarProducts = async (categoryId: string, currentId: string) => {
+  const fetchSimilarProducts = async (
+    categoryId: string,
+    currentId: string,
+  ) => {
     try {
       setLoadingSimilar(true);
 
@@ -110,7 +119,7 @@ export default function ProductDetailScreen() {
       if (result.success && result.data) {
         // Loại bỏ sản phẩm hiện tại khỏi danh sách tương tự
         const filtered = result.data.products.filter(
-          (p: Product) => p._id !== currentId
+          (p: Product) => p._id !== currentId,
         );
         setSimilarProducts(filtered.slice(0, 4)); // Chỉ lấy 4 sản phẩm
       }
@@ -137,11 +146,34 @@ export default function ProductDetailScreen() {
   };
 
   // ============================================================
-  // XỬ LÝ: THÊM VÀO GIỎ HÀNG (tạm thời - chưa có cart service)
+  // XỬ LÝ: THÊM VÀO GIỎ HÀNG
   // ============================================================
-  const handleAddToCart = () => {
-    // TODO: Khi có cart service thì thay bằng API thực tế
-    alert(`Đã thêm ${quantity} sản phẩm "${product?.name}" vào giỏ hàng!`);
+  const handleAddToCart = async () => {
+    if (!product || !id) return;
+    
+    // Check nếu người dùng chưa đăng nhập
+    const isLoggedIn = await TokenManager.isLoggedIn();
+    if (!isLoggedIn) {
+      alert.showAlert({
+        type: "info",
+        title: "Yêu cầu đăng nhập",
+        message: "Bạn cần đăng nhập trước để thêm sản phẩm vào giỏ hàng.",
+        buttons: [
+          { text: "Bỏ qua", style: "cancel" },
+          { text: "Đăng nhập", onPress: () => router.push("/(auth)/login" as any) }
+        ]
+      });
+      return;
+    }
+
+    // Call API thêm giỏ hàng
+    const response = await cartService.addToCart(id as string, quantity);
+    if (response.success) {
+      incrementCartCount(quantity);
+      alert.showSuccess("Thành công", `Đã thêm ${quantity} sản phẩm "${product?.name}" vào giỏ hàng!`);
+    } else {
+      alert.showError("Lỗi", response.error || "Có lỗi xảy ra khi thêm vào giỏ hàng.");
+    }
   };
 
   // ============================================================
@@ -221,13 +253,36 @@ export default function ProductDetailScreen() {
 
           {/* Breadcrumb */}
           <Text style={styles.breadcrumb}>
-            <Text style={styles.breadcrumbLink} onPress={() => router.push("/products")}>
+            <Text
+              style={styles.breadcrumbLink}
+              onPress={() => router.push("/products")}
+            >
               Sản phẩm
             </Text>
             {" / "}
             {product.name}
           </Text>
         </View>
+
+        {/* Icon giỏ hàng bên dưới Header nếu cần (Nổi lên) */}
+        <TouchableOpacity 
+          style={{ position: 'absolute', top: 12, right: 16, padding: 8, backgroundColor: '#f1f5f9', borderRadius: 12, zIndex: 10 }}
+          onPress={() => router.push('/cart')}
+        >
+          <Ionicons name="cart-outline" size={26} color="#1E3A5F" />
+          {cartCount > 0 && (
+            <View style={{
+              position: 'absolute', top: -2, right: -4,
+              backgroundColor: '#E63946', borderRadius: 10,
+              minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center',
+              paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#fff'
+            }}>
+              <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
+                {cartCount > 99 ? '99+' : cartCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* =============================================== */}
         {/* PHẦN 1: ẢNH SẢN PHẨM */}
@@ -266,8 +321,7 @@ export default function ProductDetailScreen() {
                   onPress={() => setSelectedImageIndex(index)}
                   style={[
                     styles.thumbnailItem,
-                    selectedImageIndex === index &&
-                      styles.thumbnailItemActive,
+                    selectedImageIndex === index && styles.thumbnailItemActive,
                   ]}
                 >
                   <Image
@@ -311,9 +365,7 @@ export default function ProductDetailScreen() {
               <Text
                 style={[
                   styles.specValue,
-                  isOutOfStock(product)
-                    ? styles.outOfStock
-                    : styles.inStock,
+                  isOutOfStock(product) ? styles.outOfStock : styles.inStock,
                 ]}
               >
                 {isOutOfStock(product)
@@ -332,29 +384,29 @@ export default function ProductDetailScreen() {
           {/* =============================================== */}
           {/* MÃ GIẢM GIÁ */}
           {/* =============================================== */}
-          <View style={styles.voucherSection}>
+          {/* <View style={styles.voucherSection}>
             <Text style={styles.voucherTitle}>Mã giảm giá</Text>
-            <View style={styles.voucherCard}>
+            <View style={styles.voucherCard}> */}
               {/* Nhãn FREE Ship */}
-              <View style={styles.voucherBadge}>
+              {/* <View style={styles.voucherBadge}>
                 <Text style={styles.voucherBadgeText}>FREE Ship</Text>
-              </View>
+              </View> */}
 
               {/* Thông tin voucher */}
-              <View style={styles.voucherInfo}>
+              {/* <View style={styles.voucherInfo}>
                 <Text style={styles.voucherCode}>SUMMER2024</Text>
                 <Text style={styles.voucherDesc}>Mô tả mới</Text>
                 <Text style={styles.voucherMin}>
                   Đơn tối thiểu: 150.000đ | HSD: 30/06/2026
                 </Text>
-              </View>
+              </View> */}
 
               {/* Nút LƯU */}
-              <TouchableOpacity style={styles.voucherSaveButton}>
+              {/* <TouchableOpacity style={styles.voucherSaveButton}>
                 <Text style={styles.voucherSaveText}>LƯU</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
 
           {/* =============================================== */}
           {/* SỐ LƯỢNG */}
@@ -524,9 +576,7 @@ function SimilarProductCard({ product, onPress }: SimilarProductCardProps) {
 
         {/* Giá + nút */}
         <View style={styles.similarFooter}>
-          <Text style={styles.similarPrice}>
-            {formatPrice(product.price)}
-          </Text>
+          <Text style={styles.similarPrice}>{formatPrice(product.price)}</Text>
           <View style={styles.similarAddBtn}>
             <Ionicons name="cart-outline" size={14} color="#fff" />
             <Text style={styles.similarAddBtnText}>Thêm</Text>

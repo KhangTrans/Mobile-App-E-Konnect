@@ -103,6 +103,14 @@ export default function CodCheckoutScreen() {
           voucherService.getMyVouchers().catch(() => ({ success: false, data: [] })),
         ]);
 
+        let defaultAddr = defaultAddressRes.success ? defaultAddressRes.data : null;
+        if (!defaultAddr) {
+          const allAddrRes = await addressService.getAddresses();
+          if (allAddrRes.success && allAddrRes.data?.length) {
+            defaultAddr = allAddrRes.data[0];
+          }
+        }
+
         if (!productRes.success || !productRes.data) {
           alert.showError("Lỗi", "Không tải được thông tin sản phẩm.");
           router.back();
@@ -117,11 +125,11 @@ export default function CodCheckoutScreen() {
           ...prev,
           customerName: userData?.fullName || userData?.username || "",
           customerEmail: userData?.email || "",
-          customerPhone: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.phoneNumber : "",
-          shippingAddress: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.address : "",
-          shippingCity: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.city : "",
-          shippingDistrict: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.district || "" : "",
-          shippingWard: defaultAddressRes.success && defaultAddressRes.data ? defaultAddressRes.data.ward || "" : "",
+          customerPhone: defaultAddr ? defaultAddr.phoneNumber : "",
+          shippingAddress: defaultAddr ? defaultAddr.address : "",
+          shippingCity: defaultAddr ? defaultAddr.city : "",
+          shippingDistrict: defaultAddr ? defaultAddr.district || "" : "",
+          shippingWard: defaultAddr ? defaultAddr.ward || "" : "",
         }));
 
         if (publicVouchersRes.success && publicVouchersRes.data) {
