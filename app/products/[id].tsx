@@ -332,29 +332,29 @@ export default function ProductDetailScreen() {
           {/* =============================================== */}
           {/* MÃ GIẢM GIÁ */}
           {/* =============================================== */}
-          <View style={styles.voucherSection}>
+          {/* <View style={styles.voucherSection}>
             <Text style={styles.voucherTitle}>Mã giảm giá</Text>
-            <View style={styles.voucherCard}>
+            <View style={styles.voucherCard}> */}
               {/* Nhãn FREE Ship */}
-              <View style={styles.voucherBadge}>
+              {/* <View style={styles.voucherBadge}>
                 <Text style={styles.voucherBadgeText}>FREE Ship</Text>
-              </View>
+              </View> */}
 
               {/* Thông tin voucher */}
-              <View style={styles.voucherInfo}>
+              {/* <View style={styles.voucherInfo}>
                 <Text style={styles.voucherCode}>SUMMER2024</Text>
                 <Text style={styles.voucherDesc}>Mô tả mới</Text>
                 <Text style={styles.voucherMin}>
                   Đơn tối thiểu: 150.000đ | HSD: 30/06/2026
                 </Text>
-              </View>
+              </View> */}
 
               {/* Nút LƯU */}
-              <TouchableOpacity style={styles.voucherSaveButton}>
+              {/* <TouchableOpacity style={styles.voucherSaveButton}>
                 <Text style={styles.voucherSaveText}>LƯU</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
 
           {/* =============================================== */}
           {/* SỐ LƯỢNG */}
