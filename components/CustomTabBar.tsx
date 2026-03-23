@@ -1,15 +1,15 @@
 import * as Haptics from "expo-haptics";
 import React from "react";
 import {
-  Dimensions,
-  Platform,
-  StyleSheet,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Platform,
+    StyleSheet,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Animated, {
-  useAnimatedStyle,
-  withSpring,
+    useAnimatedStyle,
+    withSpring,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "./ui/icon-symbol";

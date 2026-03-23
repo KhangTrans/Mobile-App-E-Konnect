@@ -9,52 +9,45 @@ export {
     getValidationErrors
 } from "./authService";
 export type {
-    ApiResponse, LoginResponse,
-    RegisterResponse, ValidationError
+    ApiResponse,
+    LoginResponse,
+    RegisterResponse,
+    ValidationError
 } from "./authService";
 
 // Product service
 export {
-    productService,
     formatPrice,
     getProductImageUrl,
     isLowStock,
-    isOutOfStock,
+    isOutOfStock, productService
 } from "./productService";
 export type {
-    Product,
-    ProductImage,
-    ProductVariant,
-    Category,
-    ProductPagination,
+    Category, Product,
+    ProductImage, ProductPagination, ProductVariant
 } from "./productService";
 
 // Address service
-export {
-    addressService,
-} from "./addressService";
-export type {
-    CustomerAddress,
-    CreateAddressInput,
-} from "./addressService";
+export { addressService } from "./addressService";
+export type { CreateAddressInput, CustomerAddress } from "./addressService";
 
 // Order service
-export {
-    orderService,
-} from "./orderService";
+export { orderService } from "./orderService";
 export type {
-    BuyNowPayload,
-    Order,
+    BuyNowPayload, MyOrdersResponse, Order,
     OrderItem,
     OrderStatus,
-    PaymentStatus,
-    MyOrdersResponse,
+    PaymentStatus
 } from "./orderService";
 
 // Voucher service
-export {
-    voucherService,
-} from "./voucherService";
+export { voucherService } from "./voucherService";
+export type { Voucher } from "./voucherService";
+
+// Notification service
+export { notificationService } from "./notificationService";
 export type {
-    Voucher,
-} from "./voucherService";
+    Notification,
+    NotificationsResponse
+} from "./notificationService";
+

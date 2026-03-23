@@ -7,36 +7,36 @@
  */
 
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  Image,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import service và kiểu dữ liệu
-import {
-  formatPrice,
-  getProductImageUrl,
-  isLowStock,
-  isOutOfStock,
-  productService,
-  type Product,
-} from "@/services/productService";
-import { cartService } from "@/services/cartService";
-import { TokenManager } from "@/utils/tokenManager";
 import { useAlert } from "@/contexts/AlertContext";
 import { useCartContext } from "@/contexts/CartContext";
+import { cartService } from "@/services/cartService";
+import {
+    formatPrice,
+    getProductImageUrl,
+    isLowStock,
+    isOutOfStock,
+    productService,
+    type Product,
+} from "@/services/productService";
+import { TokenManager } from "@/utils/tokenManager";
 
 // Import API_BASE_URL để lấy danh mục
 import BannerCarousel from "@/components/home/BannerCarousel";
@@ -74,7 +74,7 @@ export default function ExploreScreen() {
   const [loading, setLoading] = useState(true); // Loading lần đầu
   const [loadingMore, setLoadingMore] = useState(false); // Load more (pagination)
   const [refreshing, setRefreshing] = useState(false); // Pull to refresh
-  const { cartCount, incrementCartCount } = useCartContext();
+  const { incrementCartCount } = useCartContext();
 
   // --- State: phân trang ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -271,9 +271,34 @@ export default function ExploreScreen() {
           {/* Badge "HẾT HÀNG" + Overlay mờ */}
           {outOfStock && (
             <>
-              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
-              <View style={{ position: 'absolute', top: 8, right: 8, backgroundColor: '#94a3b8', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, zIndex: 2 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>HẾT HÀNG</Text>
+              <View
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(255,255,255,0.6)",
+                  zIndex: 1,
+                }}
+              />
+              <View
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  backgroundColor: "#94a3b8",
+                  paddingHorizontal: 8,
+                  paddingVertical: 3,
+                  borderRadius: 10,
+                  zIndex: 2,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 10, fontWeight: "700", color: "#fff" }}
+                >
+                  HẾT HÀNG
+                </Text>
               </View>
             </>
           )}
@@ -300,11 +325,11 @@ export default function ExploreScreen() {
           <View style={styles.productFooter}>
             <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
             {outOfStock ? (
-              <View style={[styles.addButton, { backgroundColor: '#94a3b8' }]}>
+              <View style={[styles.addButton, { backgroundColor: "#94a3b8" }]}>
                 <Text style={styles.addButtonText}>Hết hàng</Text>
               </View>
             ) : (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.addButton}
                 onPress={async () => {
                   const isLoggedIn = await TokenManager.isLoggedIn();
@@ -315,17 +340,26 @@ export default function ExploreScreen() {
                       message: "Bạn cần đăng nhập để mua hàng.",
                       buttons: [
                         { text: "Đóng", style: "cancel" },
-                        { text: "Đăng nhập", onPress: () => router.push('/(auth)/login' as any) }
-                      ]
+                        {
+                          text: "Đăng nhập",
+                          onPress: () => router.push("/(auth)/login" as any),
+                        },
+                      ],
                     });
                     return;
                   }
                   const res = await cartService.addToCart(item._id, 1);
                   if (res.success) {
                     incrementCartCount(1);
-                    alert.showSuccess("Thành công", `Đã thêm ${item.name} vào giỏ hàng`);
+                    alert.showSuccess(
+                      "Thành công",
+                      `Đã thêm ${item.name} vào giỏ hàng`,
+                    );
                   } else {
-                    alert.showError("Lỗi", res.error || "Thêm sản phẩm thất bại");
+                    alert.showError(
+                      "Lỗi",
+                      res.error || "Thêm sản phẩm thất bại",
+                    );
                   }
                 }}
               >
@@ -360,31 +394,22 @@ export default function ExploreScreen() {
       {/* =============================================== */}
       {/* HEADER: Tiêu đề + Thanh tìm kiếm */}
       {/* =============================================== */}
-      <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8}}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 24,
+          paddingTop: 16,
+          paddingBottom: 8,
+        }}
+      >
         <View>
           <Text style={styles.headerTitle}>Sản Phẩm</Text>
           <Text style={styles.headerSubtitle}>
             Hiển thị {totalProducts} sản phẩm
           </Text>
         </View>
-        <TouchableOpacity 
-          style={{ padding: 8, backgroundColor: "#F1F5F9", borderRadius: 12, position: 'relative' }}
-          onPress={() => router.push('/cart')}
-        >
-          <Ionicons name="cart-outline" size={28} color="#1E3A5F" />
-          {cartCount > 0 && (
-            <View style={{
-              position: 'absolute', top: -2, right: -4, 
-              backgroundColor: '#E63946', borderRadius: 10, 
-              minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center',
-              paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#fff'
-            }}>
-              <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-                {cartCount > 99 ? '99+' : cartCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
       </View>
 
       {/* Thanh tìm kiếm */}
@@ -664,8 +689,8 @@ const styles = StyleSheet.create({
 
   productInfo: {
     padding: 12,
-    flex: 1,                        // ← add this
-  justifyContent: "space-between", // ← add this
+    flex: 1, // ← add this
+    justifyContent: "space-between", // ← add this
   },
   productCategory: {
     fontSize: 11,
