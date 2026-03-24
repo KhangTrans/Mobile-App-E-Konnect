@@ -170,4 +170,16 @@ export const orderService = {
       throw error;
     }
   },
+
+  getOrderById: async (orderId: string): Promise<ApiResponse<Order>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<Order>>(`/${orderId}`);
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
 };

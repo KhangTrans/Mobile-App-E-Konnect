@@ -20,6 +20,8 @@ import { addressService, productService, getProductImageUrl } from "@/services";
 import { orderService } from "@/services/orderService";
 import { TokenManager } from "@/utils/tokenManager";
 import { cartService, CartData } from "@/services/cartService";
+import AddressSelectionModal from "@/components/checkout/AddressSelectionModal";
+import type { CustomerAddress } from "@/services/addressService";
 
 interface CheckoutForm {
   customerName: string;
@@ -29,7 +31,6 @@ interface CheckoutForm {
   shippingCity: string;
   shippingDistrict: string;
   shippingWard: string;
-  shippingNote: string;
 }
 
 const DEFAULT_SHIPPING_FEE = 30000;
@@ -51,6 +52,9 @@ export default function CartCheckoutScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const [selectedAddress, setSelectedAddress] = useState<CustomerAddress | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+
   const [form, setForm] = useState<CheckoutForm>({
     customerName: "",
     customerEmail: "",
@@ -59,7 +63,6 @@ export default function CartCheckoutScreen() {
     shippingCity: "",
     shippingDistrict: "",
     shippingWard: "",
-    shippingNote: "",
   });
 
   useEffect(() => {
@@ -87,6 +90,10 @@ export default function CartCheckoutScreen() {
           if (allAddrRes.success && allAddrRes.data?.length) {
             defaultAddr = allAddrRes.data[0];
           }
+        }
+
+        if (defaultAddr) {
+          setSelectedAddress(defaultAddr);
         }
 
         if (!cartRes.success || !cartRes.data || !cartRes.data.items?.length) {
@@ -132,6 +139,20 @@ export default function CartCheckoutScreen() {
   const shippingFee = useMemo(() => getShippingFee(subtotal), [subtotal]);
   const total = useMemo(() => subtotal + shippingFee, [shippingFee, subtotal]);
 
+  const handleSelectAddress = (address: CustomerAddress) => {
+    setSelectedAddress(address);
+    setForm((prev) => ({
+      ...prev,
+      customerName: address.fullName,
+      customerPhone: address.phoneNumber,
+      shippingAddress: address.address,
+      shippingCity: address.city,
+      shippingDistrict: address.district || "",
+      shippingWard: address.ward || "",
+    }));
+    setShowAddressModal(false);
+  };
+
   const updateForm = (key: keyof CheckoutForm, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -142,13 +163,13 @@ export default function CartCheckoutScreen() {
       return false;
     }
 
-    if (!form.customerName.trim() || !form.customerEmail.trim() || !form.customerPhone.trim()) {
-      alert.showError("Thiếu thông tin", "Vui lòng nhập đầy đủ tên, email và số điện thoại.");
+    if (!selectedAddress) {
+      alert.showError("Thiếu địa chỉ", "Vui lòng chọn địa chỉ giao hàng.");
       return false;
     }
 
-    if (!form.shippingAddress.trim() || !form.shippingCity.trim()) {
-      alert.showError("Thiếu địa chỉ", "Vui lòng nhập địa chỉ và tỉnh/thành phố giao hàng.");
+    if (!form.customerEmail.trim()) {
+      alert.showError("Thiếu thông tin", "Vui lòng nhập email.");
       return false;
     }
 
@@ -168,7 +189,6 @@ export default function CartCheckoutScreen() {
         shippingCity: form.shippingCity.trim(),
         shippingDistrict: form.shippingDistrict.trim() || undefined,
         shippingWard: form.shippingWard.trim() || undefined,
-        shippingNote: form.shippingNote.trim() || undefined,
         paymentMethod: "cod",
       });
 
@@ -261,15 +281,31 @@ export default function CartCheckoutScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Thông tin nhận hàng</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.cardTitle}>Thông tin nhận hàng</Text>
+            <TouchableOpacity onPress={() => setShowAddressModal(true)}>
+              <Text style={styles.changeAddressText}>Thay đổi</Text>
+            </TouchableOpacity>
+          </View>
 
-          <Text style={styles.inputLabel}>Họ và tên</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nguyễn Văn A"
-            value={form.customerName}
-            onChangeText={(value) => updateForm("customerName", value)}
-          />
+          {selectedAddress ? (
+            <View style={styles.selectedAddressBox}>
+              <View style={styles.addressHeaderLeft}>
+                <Ionicons name="location-sharp" size={20} color="#EE4D2D" />
+                <Text style={styles.addressName}>{selectedAddress.fullName}</Text>
+                <Text style={styles.addressPhone}> | {selectedAddress.phoneNumber}</Text>
+              </View>
+              <Text style={styles.addressText}>{selectedAddress.address}</Text>
+              <Text style={styles.addressText}>
+                {[selectedAddress.ward, selectedAddress.district, selectedAddress.city].filter(Boolean).join(", ")}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.selectAddressBtn} onPress={() => setShowAddressModal(true)}>
+              <Ionicons name="add-circle-outline" size={24} color="#EE4D2D" />
+              <Text style={styles.selectAddressText}>Chọn địa chỉ nhận hàng</Text>
+            </TouchableOpacity>
+          )}
 
           <Text style={styles.inputLabel}>Email</Text>
           <TextInput
@@ -279,61 +315,6 @@ export default function CartCheckoutScreen() {
             autoCapitalize="none"
             value={form.customerEmail}
             onChangeText={(value) => updateForm("customerEmail", value)}
-          />
-
-          <Text style={styles.inputLabel}>Số điện thoại</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="0912345678"
-            keyboardType="phone-pad"
-            value={form.customerPhone}
-            onChangeText={(value) => updateForm("customerPhone", value)}
-          />
-
-          <Text style={styles.inputLabel}>Địa chỉ</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Số nhà, tên đường"
-            value={form.shippingAddress}
-            onChangeText={(value) => updateForm("shippingAddress", value)}
-          />
-
-          <Text style={styles.inputLabel}>Tỉnh / Thành phố</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="TP. Ho Chi Minh"
-            value={form.shippingCity}
-            onChangeText={(value) => updateForm("shippingCity", value)}
-          />
-
-          <View style={styles.rowInputs}>
-            <View style={styles.halfInput}>
-              <Text style={styles.inputLabel}>Quận / Huyện</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Tùy chọn"
-                value={form.shippingDistrict}
-                onChangeText={(value) => updateForm("shippingDistrict", value)}
-              />
-            </View>
-            <View style={styles.halfInput}>
-              <Text style={styles.inputLabel}>Phường / Xã</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Tùy chọn"
-                value={form.shippingWard}
-                onChangeText={(value) => updateForm("shippingWard", value)}
-              />
-            </View>
-          </View>
-
-          <Text style={styles.inputLabel}>Ghi chú</Text>
-          <TextInput
-            style={[styles.input, styles.noteInput]}
-            placeholder="Ví dụ: giao giờ hành chính"
-            multiline
-            value={form.shippingNote}
-            onChangeText={(value) => updateForm("shippingNote", value)}
           />
         </View>
 
@@ -375,6 +356,13 @@ export default function CartCheckoutScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      <AddressSelectionModal
+        visible={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onSelect={handleSelectAddress}
+        selectedAddressId={selectedAddress?._id}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -463,6 +451,64 @@ const styles = StyleSheet.create({
     color: "#1E3A5F",
     marginBottom: 12,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  changeAddressText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#EE4D2D",
+    paddingBottom: 12,
+  },
+  selectedAddressBox: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    marginBottom: 16,
+  },
+  addressHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  addressName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginLeft: 4,
+  },
+  addressPhone: {
+    fontSize: 14,
+    color: "#64748B",
+  },
+  addressText: {
+    fontSize: 14,
+    color: "#475569",
+    marginLeft: 24,
+    lineHeight: 20,
+  },
+  selectAddressBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#EE4D2D",
+    backgroundColor: "#FFF8F6",
+    marginBottom: 16,
+    gap: 8,
+  },
+  selectAddressText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#EE4D2D",
+  },
   productRow: {
     flexDirection: "row",
     gap: 12,
@@ -543,11 +589,6 @@ const styles = StyleSheet.create({
   },
   halfInput: {
     flex: 1,
-  },
-  noteInput: {
-    minHeight: 84,
-    textAlignVertical: "top",
-    marginBottom: 0,
   },
   paymentMethodBox: {
     flexDirection: "row",
