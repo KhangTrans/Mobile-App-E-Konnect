@@ -199,9 +199,9 @@ export default function OrdersHistoryScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <OrderCard 
-              order={item} 
-              onPressDetail={() => {}} 
+            <OrderCard
+              order={item}
+              onPressDetail={() => router.push(`/orders/${item._id}` as any)}
               onPressRepurchase={() => handleRepurchase(item._id)}
               isRepurchasing={repurchasingId === item._id}
             />
