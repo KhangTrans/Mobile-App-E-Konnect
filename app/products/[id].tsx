@@ -8,7 +8,7 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -20,7 +20,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -36,15 +35,32 @@ import { cartService } from "@/services/cartService";
 import { TokenManager } from "@/utils/tokenManager";
 import { useAlert } from "@/contexts/AlertContext";
 import { useCartContext } from "@/contexts/CartContext";
+import { reviewService } from "@/services/reviewService";
+import type { ProductReview, ReviewStats } from "@/services/reviewService";
 
 const { width } = Dimensions.get("window");
+
+const DEFAULT_REVIEW_STATS: ReviewStats = {
+  averageRating: 0,
+  totalReviews: 0,
+  distribution: {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  },
+};
 
 // ============================================================
 // COMPONENT CHÍNH
 // ============================================================
 export default function ProductDetailScreen() {
   // Lấy product ID từ URL (route params)
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, focusReview } = useLocalSearchParams<{
+    id: string;
+    focusReview?: string;
+  }>();
 
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -65,6 +81,18 @@ export default function ProductDetailScreen() {
 
   // --- State: số lượng mua ---
   const [quantity, setQuantity] = useState(1);
+
+  // --- State: đánh giá ---
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [reviewStats, setReviewStats] = useState<ReviewStats>(DEFAULT_REVIEW_STATS);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const autoScrolledReviewRef = useRef(false);
+  const [reviewSectionY, setReviewSectionY] = useState(0);
 
   // ============================================================
   // LẤY THÔNG TIN SẢN PHẨM
@@ -102,6 +130,60 @@ export default function ProductDetailScreen() {
 
     fetchProduct();
   }, [id]);
+
+  // ============================================================
+  // LẤY ĐÁNH GIÁ SẢN PHẨM
+  // ============================================================
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchReviews = async () => {
+      try {
+        setLoadingReviews(true);
+
+        const [reviewsRes, statsRes] = await Promise.all([
+          reviewService.getProductReviews(id),
+          reviewService.getReviewStats(id),
+        ]);
+
+        if (reviewsRes.success && Array.isArray(reviewsRes.data)) {
+          setReviews(reviewsRes.data);
+        } else {
+          setReviews([]);
+        }
+
+        if (statsRes.success && statsRes.data) {
+          setReviewStats(statsRes.data);
+        } else {
+          setReviewStats(DEFAULT_REVIEW_STATS);
+        }
+      } catch (err) {
+        console.error("Error fetching reviews:", err);
+        setReviews([]);
+        setReviewStats(DEFAULT_REVIEW_STATS);
+      } finally {
+        setLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [id]);
+
+  useEffect(() => {
+    const shouldFocusReview = focusReview === "1" || focusReview === "true";
+    if (!shouldFocusReview || loading) return;
+    if (reviewSectionY <= 0 || autoScrolledReviewRef.current) return;
+
+    const timer = setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        y: Math.max(reviewSectionY - 12, 0),
+        animated: true,
+      });
+      autoScrolledReviewRef.current = true;
+    }, 220);
+
+    return () => clearTimeout(timer);
+  }, [focusReview, loading, reviewSectionY]);
 
   // ============================================================
   // LẤY SẢN PHẨM TƯƠNG TỰ (cùng danh mục)
@@ -191,6 +273,90 @@ export default function ProductDetailScreen() {
     });
   };
 
+  const renderStars = (rating: number, size: number = 16) => {
+    return (
+      <View style={{ flexDirection: "row", gap: 2 }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Ionicons
+            key={star}
+            name={star <= rating ? "star" : "star-outline"}
+            size={size}
+            color="#facc15"
+          />
+        ))}
+      </View>
+    );
+  };
+
+  const handleSubmitReview = async () => {
+    if (!id) return;
+
+    const isLoggedIn = await TokenManager.isLoggedIn();
+    if (!isLoggedIn) {
+      alert.showAlert({
+        type: "info",
+        title: "Yêu cầu đăng nhập",
+        message: "Bạn cần đăng nhập trước để gửi đánh giá.",
+        buttons: [
+          { text: "Bỏ qua", style: "cancel" },
+          { text: "Đăng nhập", onPress: () => router.push("/(auth)/login" as any) },
+        ],
+      });
+      return;
+    }
+
+    if (reviewRating < 1 || reviewRating > 5) {
+      alert.showWarning("Đánh giá chưa hợp lệ", "Vui lòng chọn số sao từ 1 đến 5.");
+      return;
+    }
+
+    if (reviewComment.trim().length < 3) {
+      alert.showWarning("Thiếu nội dung", "Vui lòng nhập nhận xét tối thiểu 3 ký tự.");
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const response = await reviewService.createReview({
+        productId: id,
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      });
+
+      if (response.success) {
+        alert.showSuccess("Thành công", "Đánh giá của bạn đã được ghi nhận.");
+        setReviewComment("");
+        setReviewRating(5);
+
+        const [reviewsRes, statsRes] = await Promise.all([
+          reviewService.getProductReviews(id),
+          reviewService.getReviewStats(id),
+        ]);
+
+        if (reviewsRes.success && Array.isArray(reviewsRes.data)) {
+          setReviews(reviewsRes.data);
+        }
+        if (statsRes.success && statsRes.data) {
+          setReviewStats(statsRes.data);
+        }
+        return;
+      }
+
+      alert.showError(
+        "Không thể đánh giá",
+        response.message || "Bạn chưa đủ điều kiện để đánh giá sản phẩm này.",
+      );
+    } catch (error: any) {
+      console.error("Submit review error:", error);
+      alert.showError(
+        "Lỗi",
+        error?.response?.data?.message || "Không thể gửi đánh giá. Vui lòng thử lại.",
+      );
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   // ============================================================
   // RENDER: MÀN HÌNH LOADING
   // ============================================================
@@ -237,7 +403,7 @@ export default function ProductDetailScreen() {
   // ============================================================
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         {/* =============================================== */}
         {/* HEADER: Nút quay lại + breadcrumb */}
         {/* =============================================== */}
@@ -482,6 +648,126 @@ export default function ProductDetailScreen() {
             <Text style={styles.descriptionText}>
               {product.description || "Sản phẩm hiện chưa có mô tả chi tiết."}
             </Text>
+          </View>
+
+          {/* =============================================== */}
+          {/* ĐÁNH GIÁ SẢN PHẨM */}
+          {/* =============================================== */}
+          <View
+            style={styles.reviewSection}
+            onLayout={(event) => setReviewSectionY(event.nativeEvent.layout.y)}
+          >
+            <Text style={styles.sectionTitle}>Đánh giá sản phẩm</Text>
+
+            {loadingReviews ? (
+              <ActivityIndicator size="small" color="#26C6DA" style={{ marginVertical: 12 }} />
+            ) : (
+              <>
+                <View style={styles.reviewStatsCard}>
+                  <View style={styles.reviewAverageBox}>
+                    <Text style={styles.reviewAverageText}>{reviewStats.averageRating.toFixed(1)}</Text>
+                    {renderStars(Math.round(reviewStats.averageRating), 18)}
+                    <Text style={styles.reviewTotalText}>{reviewStats.totalReviews} đánh giá</Text>
+                  </View>
+
+                  <View style={styles.reviewDistributionBox}>
+                    {[5, 4, 3, 2, 1].map((star) => {
+                      const count = reviewStats.distribution[star as 1 | 2 | 3 | 4 | 5] || 0;
+                      const percent = reviewStats.totalReviews > 0
+                        ? Math.round((count / reviewStats.totalReviews) * 100)
+                        : 0;
+
+                      return (
+                        <View key={star} style={styles.distributionRow}>
+                          <Text style={styles.distributionLabel}>{star} sao</Text>
+                          <View style={styles.distributionBarBg}>
+                            <View
+                              style={[
+                                styles.distributionBarFill,
+                                { width: `${percent}%` },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.distributionCount}>{count}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.reviewFormCard}>
+                  <Text style={styles.reviewFormTitle}>Gửi đánh giá của bạn</Text>
+
+                  <View style={styles.reviewRatingRow}>
+                    <Text style={styles.reviewRatingLabel}>Chất lượng sản phẩm:</Text>
+                    <View style={styles.reviewRatingStarsRow}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
+                          <Ionicons
+                            name={star <= reviewRating ? "star" : "star-outline"}
+                            size={24}
+                            color="#facc15"
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  <TextInput
+                    style={styles.reviewCommentInput}
+                    multiline
+                    maxLength={500}
+                    placeholder="Hãy chia sẻ cảm nhận của bạn về sản phẩm này..."
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                  />
+                  <Text style={styles.reviewCounterText}>{reviewComment.length} / 500</Text>
+
+                  <TouchableOpacity
+                    style={[styles.submitReviewBtn, submittingReview && styles.disabledBtn]}
+                    onPress={handleSubmitReview}
+                    disabled={submittingReview}
+                  >
+                    {submittingReview ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.submitReviewBtnText}>Gửi đánh giá</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.reviewListSection}>
+                  <Text style={styles.reviewListTitle}>Nhận xét từ khách hàng</Text>
+                  {reviews.length === 0 ? (
+                    <Text style={styles.noReviewText}>Sản phẩm chưa có đánh giá nào.</Text>
+                  ) : (
+                    reviews.map((review) => (
+                      <View key={review._id} style={styles.reviewItemCard}>
+                        <View style={styles.reviewItemHeader}>
+                          <View>
+                            <Text style={styles.reviewUserName}>
+                              {review.user?.fullName || review.user?.username || "Người dùng"}
+                            </Text>
+                            {renderStars(review.rating, 14)}
+                          </View>
+                          <Text style={styles.reviewDateText}>
+                            {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                          </Text>
+                        </View>
+                        <Text style={styles.reviewCommentText}>{review.comment}</Text>
+
+                        {review.reply?.comment ? (
+                          <View style={styles.replyBox}>
+                            <Text style={styles.replyTitle}>Phản hồi từ Shop</Text>
+                            <Text style={styles.replyComment}>{review.reply.comment}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    ))
+                  )}
+                </View>
+              </>
+            )}
           </View>
 
           {/* =============================================== */}
@@ -917,6 +1203,187 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#64748b",
     lineHeight: 22,
+  },
+
+  // --- Đánh giá ---
+  reviewSection: {
+    marginBottom: 24,
+  },
+  reviewStatsCard: {
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 12,
+    marginBottom: 14,
+  },
+  reviewAverageBox: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  reviewAverageText: {
+    fontSize: 40,
+    fontWeight: "800",
+    color: "#1E3A5F",
+    marginBottom: 6,
+  },
+  reviewTotalText: {
+    marginTop: 6,
+    fontSize: 13,
+    color: "#64748b",
+  },
+  reviewDistributionBox: {
+    gap: 8,
+  },
+  distributionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  distributionLabel: {
+    width: 44,
+    fontSize: 12,
+    color: "#334155",
+  },
+  distributionBarBg: {
+    flex: 1,
+    height: 8,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+  distributionBarFill: {
+    height: "100%",
+    backgroundColor: "#facc15",
+    borderRadius: 999,
+  },
+  distributionCount: {
+    width: 24,
+    textAlign: "right",
+    fontSize: 12,
+    color: "#334155",
+  },
+  reviewFormCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 12,
+    marginBottom: 14,
+  },
+  reviewFormTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E3A5F",
+    marginBottom: 10,
+  },
+  reviewRatingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  reviewRatingLabel: {
+    fontSize: 14,
+    color: "#334155",
+    fontWeight: "600",
+  },
+  reviewRatingStarsRow: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  reviewCommentInput: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    textAlignVertical: "top",
+    color: "#0f172a",
+    backgroundColor: "#fff",
+  },
+  reviewCounterText: {
+    marginTop: 6,
+    textAlign: "right",
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  submitReviewBtn: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    backgroundColor: "#26C6DA",
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minWidth: 120,
+    alignItems: "center",
+  },
+  submitReviewBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  reviewListSection: {
+    gap: 10,
+  },
+  reviewListTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1E3A5F",
+  },
+  noReviewText: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+    paddingVertical: 8,
+  },
+  reviewItemCard: {
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: "#fff",
+  },
+  reviewItemHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    gap: 8,
+  },
+  reviewUserName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1E3A5F",
+    marginBottom: 4,
+  },
+  reviewDateText: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  reviewCommentText: {
+    fontSize: 14,
+    color: "#334155",
+    lineHeight: 20,
+  },
+  replyBox: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+    backgroundColor: "#F0F9FF",
+    borderRadius: 8,
+    padding: 10,
+  },
+  replyTitle: {
+    fontSize: 13,
+    color: "#0284C7",
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  replyComment: {
+    fontSize: 13,
+    color: "#334155",
+    lineHeight: 18,
   },
 
   // --- Sản phẩm tương tự ---

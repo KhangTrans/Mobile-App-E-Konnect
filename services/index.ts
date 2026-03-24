@@ -51,3 +51,12 @@ export type {
     NotificationsResponse
 } from "./notificationService";
 
+// Review service
+export { reviewService } from "./reviewService";
+export type {
+    ProductReview,
+    ReviewStats,
+    ReviewUser,
+    ReviewReply
+} from "./reviewService";
+
