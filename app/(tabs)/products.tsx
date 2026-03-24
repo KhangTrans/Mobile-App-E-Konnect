@@ -44,7 +44,7 @@ const { width } = Dimensions.get("window");
 const NUM_COLUMNS = 2;
 
 // Chiều rộng mỗi card sản phẩm
-const CARD_WIDTH = (width - 48) / NUM_COLUMNS; // 48 = padding 24 mỗi bên
+const CARD_WIDTH = (width - 48 - 12) / NUM_COLUMNS; // 48 = padding 24 mỗi bên, 12 = gap
 
 // ============================================================
 // KIỂU DỮ LIỆU CỤC BỘ (Local Types)
@@ -532,6 +532,7 @@ const styles = StyleSheet.create({
   },
   productRow: {
     justifyContent: "space-between",
+    gap: 12,
   },
   productCard: {
     width: CARD_WIDTH,

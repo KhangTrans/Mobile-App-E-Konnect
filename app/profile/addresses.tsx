@@ -236,17 +236,17 @@ export default function AddressesScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#1E3A5F" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Quản lý địa chỉ</Text>
         <TouchableOpacity onPress={openAddModal} style={styles.addIconBtn}>
-          <Ionicons name="add" size={24} color="#EE4D2D" />
+          <Ionicons name="add" size={24} color="#26C6DA" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#EE4D2D" />
+          <ActivityIndicator size="large" color="#26C6DA" />
           <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
         </View>
       ) : (
@@ -303,16 +303,16 @@ export default function AddressesScreen() {
                     style={[styles.actionBtn, { marginRight: 16 }]}
                     disabled={actionLoading}
                   >
-                    <Ionicons name="create-outline" size={18} color="#4285F4" />
-                    <Text style={[styles.actionText, { color: '#4285F4', marginLeft: 4 }]}>Sửa</Text>
+                    <Ionicons name="create-outline" size={18} color="#1E3A5F" />
+                    <Text style={[styles.actionText, { color: '#1E3A5F', marginLeft: 4 }]}>Sửa</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleDeleteAddress(address._id)}
                     style={styles.actionBtn}
                     disabled={actionLoading}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#EE4D2D" />
-                    <Text style={[styles.actionText, { color: "#EE4D2D", marginLeft: 4 }]}>Xóa</Text>
+                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    <Text style={[styles.actionText, { color: "#ef4444", marginLeft: 4 }]}>Xóa</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -331,7 +331,7 @@ export default function AddressesScreen() {
             <Text style={styles.modalTitle}>{editingAddress ? "Sửa địa chỉ" : "Thêm địa chỉ mới"}</Text>
             <TouchableOpacity onPress={handleSaveAddress} style={styles.saveBtn} disabled={actionLoading}>
               {actionLoading ? (
-                <ActivityIndicator size="small" color="#EE4D2D" />
+                <ActivityIndicator size="small" color="#26C6DA" />
               ) : (
                 <Text style={styles.saveBtnText}>Lưu</Text>
               )}
@@ -366,7 +366,7 @@ export default function AddressesScreen() {
                 <Text style={[styles.dropdownSelectorText, !formData.city && styles.dropdownSelectorPlaceholder]}>
                   {formData.city || "Chọn Tỉnh/Thành phố"}
                 </Text>
-                <Ionicons name="chevron-down-outline" size={20} color="#888" />
+                <Ionicons name="chevron-down-outline" size={20} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
@@ -377,7 +377,7 @@ export default function AddressesScreen() {
                   <Text style={[styles.dropdownSelectorText, !formData.district && styles.dropdownSelectorPlaceholder]} numberOfLines={1}>
                     {formData.district || "Chọn Quận/Huyện"}
                   </Text>
-                  <Ionicons name="chevron-down-outline" size={20} color="#888" />
+                  <Ionicons name="chevron-down-outline" size={20} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
               <View style={[styles.inputGroup, { flex: 1 }]}>
@@ -386,7 +386,7 @@ export default function AddressesScreen() {
                   <Text style={[styles.dropdownSelectorText, !formData.ward && styles.dropdownSelectorPlaceholder]} numberOfLines={1}>
                     {formData.ward || "Chọn Phường/Xã"}
                   </Text>
-                  <Ionicons name="chevron-down-outline" size={20} color="#888" />
+                  <Ionicons name="chevron-down-outline" size={20} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -423,7 +423,7 @@ export default function AddressesScreen() {
                 value={formData.isDefault}
                 onValueChange={(val) => setFormData(prev => ({ ...prev, isDefault: val }))}
                 trackColor={{ false: "#767577", true: "#fbc2ba" }}
-                thumbColor={formData.isDefault ? "#EE4D2D" : "#f4f3f4"}
+                thumbColor={formData.isDefault ? "#26C6DA" : "#f4f3f4"}
                 disabled={editingAddress?.isDefault}
               />
             </View>
@@ -446,12 +446,12 @@ export default function AddressesScreen() {
                     : "Chọn Phường/Xã"}
               </Text>
               <TouchableOpacity onPress={() => setSelectionModalVisible(false)} style={styles.bottomSheetClose}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color="#1E3A5F" />
               </TouchableOpacity>
             </View>
             {getSelectionData().length === 0 ? (
               <View style={{ padding: 20, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color="#EE4D2D" />
+                <ActivityIndicator size="small" color="#26C6DA" />
                 <Text style={{ marginTop: 10, color: '#666' }}>Đang tải dữ liệu...</Text>
               </View>
             ) : (
@@ -467,7 +467,7 @@ export default function AddressesScreen() {
                     {((selectionType === "city" && formData.city === item.name) ||
                       (selectionType === "district" && formData.district === item.name) ||
                       (selectionType === "ward" && formData.ward === item.name)) && (
-                        <Ionicons name="checkmark" size={20} color="#EE4D2D" />
+                        <Ionicons name="checkmark" size={20} color="#26C6DA" />
                       )}
                   </TouchableOpacity>
                 )}
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    color: "#666",
+    color: "#64748b",
   },
   header: {
     flexDirection: "row",
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#1E3A5F",
   },
   addIconBtn: {
     width: 40,
@@ -535,13 +535,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 12,
-    color: "#888",
+    color: "#94a3b8",
     marginBottom: 16,
   },
   emptyAddBtn: {
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: "#EE4D2D",
+    backgroundColor: "#26C6DA",
     borderRadius: 8,
   },
   emptyAddBtnText: {
@@ -550,14 +550,11 @@ const styles = StyleSheet.create({
   },
   addressCard: {
     backgroundColor: "#FFF",
-    borderRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
     padding: 16,
     marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   addressHeader: {
     flexDirection: "row",
@@ -567,7 +564,7 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: "#1E3A5F",
     flexShrink: 1,
   },
   addressSeparator: {
@@ -576,11 +573,11 @@ const styles = StyleSheet.create({
   },
   addressPhone: {
     fontSize: 14,
-    color: "#666",
+    color: "#64748b",
   },
   addressText: {
     fontSize: 14,
-    color: "#555",
+    color: "#64748b",
     lineHeight: 20,
     marginBottom: 4,
   },
@@ -591,21 +588,21 @@ const styles = StyleSheet.create({
   },
   tag: {
     borderWidth: 1,
-    borderColor: "#4285F4",
+    borderColor: "#26C6DA",
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 8,
   },
   tagText: {
-    color: "#4285F4",
+    color: "#26C6DA",
     fontSize: 12,
   },
   defaultTag: {
-    borderColor: "#EE4D2D",
+    borderColor: "#26C6DA",
   },
   defaultTagText: {
-    color: "#EE4D2D",
+    color: "#26C6DA",
     fontSize: 12,
   },
   addressActions: {
@@ -622,18 +619,18 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    color: "#666",
+    color: "#64748b",
   },
   setDefaultBtn: {
     borderWidth: 1,
-    borderColor: "#EE4D2D",
+    borderColor: "#26C6DA",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
   },
   setDefaultText: {
     fontSize: 12,
-    color: "#EE4D2D",
+    color: "#26C6DA",
     fontWeight: "bold",
   },
 
@@ -655,13 +652,13 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   closeBtnText: {
-    color: "#666",
+    color: "#64748b",
     fontSize: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#1E3A5F",
   },
   saveBtn: {
     padding: 4,
@@ -669,7 +666,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   saveBtnText: {
-    color: "#EE4D2D",
+    color: "#26C6DA",
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -681,7 +678,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 14,
-    color: "#555",
+    color: "#64748b",
     marginBottom: 8,
     fontWeight: "500",
   },
@@ -691,7 +688,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 15,
-    color: "#333",
+    color: "#1E3A5F",
     backgroundColor: "#FAFAFA",
   },
   dropdownSelector: {
@@ -706,7 +703,7 @@ const styles = StyleSheet.create({
   },
   dropdownSelectorText: {
     fontSize: 15,
-    color: "#333",
+    color: "#1E3A5F",
     flex: 1,
   },
   dropdownSelectorPlaceholder: {
@@ -724,15 +721,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   chipActive: {
-    borderColor: "#EE4D2D",
+    borderColor: "#26C6DA",
     backgroundColor: "#FFF3F0",
   },
   chipText: {
-    color: "#666",
+    color: "#64748b",
     fontSize: 14,
   },
   chipTextActive: {
-    color: "#EE4D2D",
+    color: "#26C6DA",
     fontWeight: "bold",
   },
   switchGroup: {
@@ -746,7 +743,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 15,
-    color: "#333",
+    color: "#1E3A5F",
   },
 
   // --- Bottom Sheet Selection Styles ---
@@ -788,6 +785,6 @@ const styles = StyleSheet.create({
   },
   selectionItemText: {
     fontSize: 15,
-    color: "#333",
+    color: "#1E3A5F",
   }
 });
