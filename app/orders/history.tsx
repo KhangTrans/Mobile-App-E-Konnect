@@ -136,6 +136,29 @@ export default function OrdersHistoryScreen() {
     fetchOrders(activeTab, true);
   };
 
+  const handlePrimaryAction = (order: Order) => {
+    if (order.orderStatus === "delivered") {
+      const firstItem = order.items?.[0];
+      const productId =
+        firstItem && typeof firstItem.productId === "object"
+          ? firstItem.productId._id
+          : firstItem?.productId;
+
+      if (!productId) {
+        alert.showError("Lỗi", "Không tìm thấy sản phẩm để đánh giá.");
+        return;
+      }
+
+      router.push({
+        pathname: "/products/[id]",
+        params: { id: String(productId), focusReview: "1" },
+      });
+      return;
+    }
+
+    router.push(`/orders/${order._id}` as any);
+  };
+
   const emptyMessage = useMemo(() => {
     if (activeTab === "all") return "Bạn chưa có đơn hàng nào.";
     return "Không có đơn hàng ở trạng thái này.";
@@ -201,7 +224,7 @@ export default function OrdersHistoryScreen() {
           renderItem={({ item }) => (
             <OrderCard
               order={item}
-              onPressDetail={() => router.push(`/orders/${item._id}` as any)}
+              onPressDetail={() => handlePrimaryAction(item)}
               onPressRepurchase={() => handleRepurchase(item._id)}
               isRepurchasing={repurchasingId === item._id}
             />
@@ -224,9 +247,10 @@ function OrderCard({
   isRepurchasing?: boolean;
 }) {
   const firstItem = order.items?.[0];
+  const isCompletedOrder = order.orderStatus === "delivered";
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} activeOpacity={0.95} onPress={onPressDetail}>
       <View style={styles.shopRow}>
         <View style={styles.shopLeft}>
           <Ionicons name="storefront-outline" size={16} color="#6B7280" />
@@ -255,7 +279,9 @@ function OrderCard({
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.secondaryBtn} onPress={onPressDetail}>
-          <Text style={styles.secondaryBtnText}>Xem chi tiết</Text>
+          <Text style={styles.secondaryBtnText}>
+            {isCompletedOrder ? "Đánh giá" : "Xem chi tiết"}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.primaryBtn} onPress={onPressRepurchase} disabled={isRepurchasing}>
           {isRepurchasing ? (
@@ -265,7 +291,7 @@ function OrderCard({
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
