@@ -185,6 +185,36 @@ export const authService = {
   },
 
   /**
+   * Update current user profile
+   */
+  updateProfile: async (data: { fullName?: string; avatar?: string }): Promise<ApiResponse<UserData>> => {
+    try {
+      const response = await apiClient.put<ApiResponse<UserData>>("/me", data);
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Change user password
+   */
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<ApiResponse> => {
+    try {
+      const response = await apiClient.put<ApiResponse>("/password", data);
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  /**
    * Google Sign-In (Mobile)
    */
   googleTokenLogin: async (googleData: {

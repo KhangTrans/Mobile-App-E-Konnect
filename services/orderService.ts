@@ -170,4 +170,37 @@ export const orderService = {
       throw error;
     }
   },
+
+  getOrderById: async (orderId: string): Promise<ApiResponse<Order>> => {
+    try {
+      const response = await apiClient.get<ApiResponse<Order>>(`/${orderId}`);
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Repurchase (Mua lại) - Tái sử dụng buyNow
+   * Frontend: Gọi getOrderById() trước để lấy chi tiết đơn,
+   * sau đó bóc tách sản phẩm và gọi hàm nay đưa sang trang thanh toán
+   */
+  repurchase: async (payload: BuyNowPayload): Promise<ApiResponse<Order>> => {
+    // Nếu chỉ có 1 sản phẩm mua lại thẳng bằng buyNow
+    try {
+      const response = await apiClient.post<ApiResponse<Order>>(
+        "/buy-now",
+        payload,
+      );
+      return response.data;
+    } catch (error) {
+      if (isAxiosError(error) && error.response) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  },
 };

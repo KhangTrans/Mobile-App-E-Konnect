@@ -47,6 +47,7 @@ export default function OrdersHistoryScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [repurchasingId, setRepurchasingId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(
     async (tab: TabFilter, isRefresh = false) => {
@@ -88,6 +89,48 @@ export default function OrdersHistoryScreen() {
   useEffect(() => {
     fetchOrders(activeTab);
   }, [activeTab, fetchOrders]);
+
+  const handleRepurchase = async (orderId: string) => {
+    try {
+      setRepurchasingId(orderId);
+      const response = await orderService.getOrderById(orderId);
+      
+      if (response.success && response.data) {
+        const order = response.data;
+        if (!order.items || order.items.length === 0) {
+          alert.showError("Lỗi", "Đơn hàng này không có sản phẩm.");
+          return;
+        }
+
+        const firstItem = order.items[0];
+        const pId =
+          typeof firstItem.productId === "object"
+            ? firstItem.productId._id
+            : firstItem.productId;
+
+        router.push({
+          pathname: "/checkout/cod",
+          params: {
+            productId: pId as string,
+            quantity: String(firstItem.quantity || 1),
+          },
+        });
+      } else {
+        alert.showError(
+          "Lỗi",
+          response.message || "Không thể tải chi tiết đơn hàng."
+        );
+      }
+    } catch (error: any) {
+      console.error("Repurchase error:", error);
+      alert.showError(
+        "Lỗi kết nối",
+        error?.response?.data?.message || "Không thể kết nối máy chủ."
+      );
+    } finally {
+      setRepurchasingId(null);
+    }
+  };
 
   const onRefresh = () => {
     fetchOrders(activeTab, true);
@@ -156,7 +199,12 @@ export default function OrdersHistoryScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <OrderCard order={item} onPressDetail={() => {}} />
+            <OrderCard 
+              order={item} 
+              onPressDetail={() => {}} 
+              onPressRepurchase={() => handleRepurchase(item._id)}
+              isRepurchasing={repurchasingId === item._id}
+            />
           )}
         />
       )}
@@ -167,9 +215,13 @@ export default function OrdersHistoryScreen() {
 function OrderCard({
   order,
   onPressDetail,
+  onPressRepurchase,
+  isRepurchasing,
 }: {
   order: Order;
   onPressDetail: () => void;
+  onPressRepurchase: () => void;
+  isRepurchasing?: boolean;
 }) {
   const firstItem = order.items?.[0];
 
@@ -205,8 +257,12 @@ function OrderCard({
         <TouchableOpacity style={styles.secondaryBtn} onPress={onPressDetail}>
           <Text style={styles.secondaryBtnText}>Xem chi tiết</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryBtn} onPress={onPressDetail}>
-          <Text style={styles.primaryBtnText}>Mua lại</Text>
+        <TouchableOpacity style={styles.primaryBtn} onPress={onPressRepurchase} disabled={isRepurchasing}>
+          {isRepurchasing ? (
+            <ActivityIndicator size="small" color="#26C6DA" />
+          ) : (
+            <Text style={styles.primaryBtnText}>Mua lại</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
