@@ -106,6 +106,11 @@ export interface Product {
   createdBy?: ProductCreator;
   createdAt: string;
   updatedAt: string;
+  // Discount fields (computed by backend)
+  hasDiscount?: boolean;
+  discountedPrice?: number;  // Giá sau khi giảm (dùng để hiển thị)
+  discountPercent?: number;  // % giảm giá
+  originalPrice?: number;    // Giá gốc (= price)
 }
 
 // Kết quả phân trang - khớp với backend controller trả về

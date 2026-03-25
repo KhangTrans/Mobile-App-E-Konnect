@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CartItemType } from '@/services/cartService';
 import { formatPrice } from '@/services/productService'; // Utility format tiền tệ (VND)
 import { useAlert } from '@/contexts/AlertContext';
+import { useRouter } from 'expo-router';
 
 interface CartItemProps {
   item: CartItemType;
@@ -13,6 +14,7 @@ interface CartItemProps {
 
 const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove }: CartItemProps) {
   const alert = useAlert();
+  const router = useRouter();
   
   // Parsing product from items array
   const activeProduct = typeof item.productId === 'object' ? item.productId : null;
@@ -32,6 +34,15 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
     setLocalQuantity(item.quantity);
   }, [item.quantity]);
 
+  // Hành động xóa sản phẩm
+  const handleRemove = () => {
+    alert.showConfirm(
+      'Xóa sản phẩm',
+      'Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?',
+      () => onRemove(item._id)
+    );
+  };
+
   // Hành động tăng / giảm số lượng
   const handleIncrease = () => {
     const newQty = localQuantity + 1;
@@ -41,12 +52,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
 
   const handleDecrease = () => {
     if (localQuantity <= 1) {
-      // Hiển thị Popup xác nhận Xóa The item 
-      alert.showConfirm(
-        'Xóa sản phẩm',
-        'Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?',
-        () => onRemove(item._id)
-      );
+      handleRemove();
     } else {
       const newQty = localQuantity - 1;
       setLocalQuantity(newQty);
@@ -54,8 +60,19 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
     }
   };
 
+  // Điều hướng đến trang chi tiết sản phẩm
+  const handleNavigateToDetail = () => {
+    if (activeProduct?._id) {
+      router.push(`/products/${activeProduct._id}` as any);
+    }
+  };
+
   return (
-    <View style={styles.cardContainer}>
+    <TouchableOpacity 
+      style={styles.cardContainer} 
+      onPress={handleNavigateToDetail}
+      activeOpacity={0.7}
+    >
       {/* ẢNH */}
       <View style={styles.imageBox}>
         <Image source={{ uri: imageUrl }} style={styles.productImage} resizeMode="cover" />
@@ -70,7 +87,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
           </Text>
           <TouchableOpacity 
             style={styles.trashBtn} 
-            onPress={() => onRemove(item._id)}
+            onPress={handleRemove}
           >
             <Ionicons name="trash-outline" size={20} color="#E63946" />
           </TouchableOpacity>
@@ -94,7 +111,7 @@ const CartItem = React.memo(function CartItem({ item, onUpdateQuantity, onRemove
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 });
 

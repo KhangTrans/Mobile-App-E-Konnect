@@ -1,16 +1,14 @@
 import * as Haptics from "expo-haptics";
-import React from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useRef } from "react";
 import {
-    Dimensions,
-    Platform,
-    StyleSheet,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import Animated, {
-    useAnimatedStyle,
-    withSpring,
-} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "./ui/icon-symbol";
 
@@ -18,96 +16,157 @@ const { width } = Dimensions.get("window");
 const MARGIN = 20;
 const TAB_BAR_WIDTH = width - MARGIN * 2;
 
+const ACTIVE_COLOR = "#26C6DA";
+const INACTIVE_COLOR = "#94a3b8";
+const GLOW_COLOR = "rgba(38, 198, 218, 0.3)";
+
+function TabIcon({
+  iconName,
+  isFocused,
+  onPress,
+}: {
+  iconName: string;
+  isFocused: boolean;
+  onPress: () => void;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.spring(scaleAnim, {
+        toValue: 0.8,
+        useNativeDriver: true,
+        speed: 80,
+        bounciness: 4,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 20,
+        bounciness: 18,
+      }),
+    ]).start();
+
+    Animated.sequence([
+      Animated.timing(glowAnim, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.timing(glowAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    onPress();
+  };
+
+  const glowOpacity = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
+  const glowScale = glowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 1.8],
+  });
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      style={styles.tabItem}
+      activeOpacity={1}
+    >
+      {/* Glow burst on tap */}
+      <Animated.View
+        style={[
+          styles.glowBurst,
+          { opacity: glowOpacity, transform: [{ scale: glowScale }] },
+        ]}
+      />
+
+      {/* Icon with scale bounce */}
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <IconSymbol
+          name={iconName}
+          size={26}
+          color={isFocused ? ACTIVE_COLOR : INACTIVE_COLOR}
+        />
+      </Animated.View>
+
+      {/* Active dot indicator below icon */}
+      {isFocused && <View style={styles.activeDot} />}
+    </TouchableOpacity>
+  );
+}
+
 export function CustomTabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
-  // Chỉ lấy đúng 3 tab chính, bỏ qua các màn hình chi tiết như banner-detail/[id]
   const validTabNames = ["index", "products", "profile"];
-  const visibleRoutes = state.routes.filter((route: any) => {
-    return validTabNames.includes(route.name);
-  });
-
-  const tabWidth = TAB_BAR_WIDTH / visibleRoutes.length;
-
-  // Xác định index thực tế của item đang active trong danh sách hiển thị
-  const activeRoute = state.routes[state.index];
-  const activeVisibleIndex = visibleRoutes.findIndex(
-    (r: any) => r.name === activeRoute.name,
+  const visibleRoutes = state.routes.filter((route: any) =>
+    validTabNames.includes(route.name)
   );
 
-  // Animation cho thanh chạy (indicator)
-  const translateX = useAnimatedStyle(() => {
-    // Nếu màn hình hiện tại không nằm trong tab bar (ví dụ banner-detail)
-    // thì giữ indicator ở vị trí trước đó (hoặc ẩn đi, ở đây ta để nó ở tab gần nhất)
-    const targetIndex =
-      activeVisibleIndex !== -1 ? activeVisibleIndex : state.index;
-
-    return {
-      transform: [
-        {
-          translateX: withSpring(targetIndex * tabWidth, {
-            damping: 18,
-            stiffness: 120,
-            mass: 0.8,
-          }),
-        },
-      ],
-      opacity: activeVisibleIndex === -1 ? 0 : 1, // Ẩn indicator nếu ở trang chi tiết
-    };
-  });
+  const activeRoute = state.routes[state.index];
+  const activeVisibleIndex = visibleRoutes.findIndex(
+    (r: any) => r.name === activeRoute.name
+  );
 
   return (
     <View
       style={[
         styles.container,
-        { bottom: Platform.OS === "ios" ? insets.bottom : 20 },
+        { bottom: Platform.OS === "ios" ? insets.bottom + 8 : 20 },
       ]}
     >
-      <View style={styles.tabContent}>
-        {/* Thanh trượt chỉ báo Active */}
-        <Animated.View
-          style={[styles.activeIndicator, { width: tabWidth - 10 }, translateX]}
-        />
+      {/* Gradient border */}
+      <LinearGradient
+        colors={["#26C6DA", "#1E3A5F", "#26C6DA"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.gradientBorder}
+      >
+        <View style={styles.tabContent}>
+          {visibleRoutes.map((route: any, index: number) => {
+            const isFocused = activeVisibleIndex === index;
 
-        {visibleRoutes.map((route: any, index: number) => {
-          const { options } = descriptors[route.key];
-          const isFocused = activeVisibleIndex === index;
+            const onPress = () => {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: "tabPress",
-              target: route.key,
-              canPreventDefault: true,
-            });
-
-            if (!isFocused && !event.defaultPrevented) {
-              if (Platform.OS !== "web") {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (!isFocused && !event.defaultPrevented) {
+                if (Platform.OS !== "web") {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+                navigation.navigate(route.name);
               }
-              navigation.navigate(route.name);
-            }
-          };
+            };
 
-          let iconName: any = "percent";
-          if (route.name === "index") iconName = "house.fill";
-          if (route.name === "products") iconName = "bag.fill";
-          if (route.name === "profile") iconName = "person.fill";
+            let iconName: any = "percent";
+            if (route.name === "index") iconName = "house.fill";
+            if (route.name === "products") iconName = "bag.fill";
+            if (route.name === "profile") iconName = "person.fill";
 
-          return (
-            <TouchableOpacity
-              key={route.key}
-              onPress={onPress}
-              style={styles.tabItem}
-              activeOpacity={0.7}
-            >
-              <IconSymbol
-                name={iconName}
-                size={24}
-                color={isFocused ? "#fff" : "#94a3b8"}
+            return (
+              <TabIcon
+                key={route.key}
+                iconName={iconName}
+                isFocused={isFocused}
+                onPress={onPress}
               />
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+            );
+          })}
+        </View>
+      </LinearGradient>
+
+      {/* Glow shadow under bar */}
+      <View style={styles.shadowGlow} />
     </View>
   );
 }
@@ -118,36 +177,56 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: TAB_BAR_WIDTH,
     zIndex: 100,
-    // Đổ bóng cho iOS
-    shadowColor: "#000",
+  },
+  gradientBorder: {
+    borderRadius: 36,
+    padding: 2,
+    shadowColor: "#26C6DA",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    // Đổ bóng cho Android
-    elevation: 6,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 12,
   },
   tabContent: {
     flexDirection: "row",
     height: 64,
-    backgroundColor: "#fff", // Nền trắng
-    borderRadius: 32,
+    backgroundColor: "#fff",
+    borderRadius: 34,
     alignItems: "center",
-    paddingHorizontal: 5,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  activeIndicator: {
-    position: "absolute",
-    height: 48,
-    backgroundColor: "#26C6DA", // Màu xanh Turquoise
-    borderRadius: 24,
-    marginHorizontal: 5,
+    paddingHorizontal: 6,
   },
   tabItem: {
     flex: 1,
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 1,
+  },
+  glowBurst: {
+    position: "absolute",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: GLOW_COLOR,
+  },
+  activeDot: {
+    position: "absolute",
+    bottom: 8,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: ACTIVE_COLOR,
+  },
+  shadowGlow: {
+    position: "absolute",
+    bottom: -6,
+    alignSelf: "center",
+    width: "60%",
+    height: 12,
+    borderRadius: 10,
+    shadowColor: ACTIVE_COLOR,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
   },
 });

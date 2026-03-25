@@ -123,12 +123,6 @@ export default function ProfileScreen() {
             )}
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push("/profile/edit" as any)}
-        >
-          <Text style={styles.editButtonText}>Sửa</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Menu Sections */}
@@ -145,13 +139,17 @@ export default function ProfileScreen() {
             icon="shippingbox.fill"
             title="Đơn hàng đang giao"
             badge="2"
-            onPress={() => router.push("/orders/shipping" as any)}
+            onPress={() =>
+              alert.showInfo("🚧 Đang phát triển", "Chức năng này đang được phát triển và sẽ có sớm. Vui lòng chờ trong phên bản tiếp theo.")
+            }
             showArrow
           />
           <MenuItem
             icon="star.fill"
             title="Đánh giá sản phẩm"
-            onPress={() => router.push("/orders/review" as any)}
+            onPress={() =>
+              alert.showInfo("🚧 Đang phát triển", "Chức năng này đang được phát triển và sẽ có sớm. Vui lòng chờ trong phên bản tiếp theo.")
+            }
             showArrow
           />
         </MenuList>
@@ -181,7 +179,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon="creditcard.fill"
             title="Phương thức thanh toán"
-            onPress={() => router.push("/profile/payment-methods" as any)}
+            onPress={() =>
+              alert.showInfo("🚧 Đang phát triển", "Chức năng này đang được phát triển và sẽ có sớm.")
+            }
             showArrow
           />
         </MenuList>
@@ -193,7 +193,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon="lock.fill"
             title="Đổi mật khẩu"
-            onPress={() => router.push("/profile/change-password" as any)}
+            onPress={() =>
+              alert.showInfo("🚧 Đang phát triển", "Chức năng này đang được phát triển và sẽ có sớm.")
+            }
             showArrow
           />
           <MenuItem
@@ -208,13 +210,17 @@ export default function ProfileScreen() {
           <MenuItem
             icon="questionmark.circle.fill"
             title="Trợ giúp & Hỗ trợ"
-            onPress={() => router.push("/support" as any)}
+            onPress={() =>
+              alert.showInfo("🚧 Đang phát triển", "Chức năng này đang được phát triển và sẽ có sớm.")
+            }
             showArrow
           />
           <MenuItem
             icon="doc.fill"
             title="Điều khoản & Chính sách"
-            onPress={() => router.push("/terms" as any)}
+            onPress={() =>
+              alert.showInfo("🚧 Đang phát triển", "Chức năng này đang được phát triển và sẽ có sớm.")
+            }
             showArrow
           />
         </MenuList>

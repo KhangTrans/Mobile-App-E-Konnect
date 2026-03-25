@@ -92,27 +92,27 @@ export default function ForgotPasswordScreen() {
   /**
    * Transition between steps with animation
    */
-  const transitionToStep = (targetStep: 1 | 2) => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: targetStep === 2 ? -width : 0,
-        duration: 0,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setStep(targetStep);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    });
-  };
+  // const transitionToStep = (targetStep: 1 | 2) => {
+  //   Animated.sequence([
+  //     Animated.timing(fadeAnim, {
+  //       toValue: 0,
+  //       duration: 200,
+  //       useNativeDriver: true,
+  //     }),
+  //     Animated.timing(slideAnim, {
+  //       toValue: targetStep === 2 ? -width : 0,
+  //       duration: 0,
+  //       useNativeDriver: true,
+  //     }),
+  //   ]).start(() => {
+  //     setStep(targetStep);
+  //     Animated.timing(fadeAnim, {
+  //       toValue: 1,
+  //       duration: 300,
+  //       useNativeDriver: true,
+  //     }).start();
+  //   });
+  // };
 
   /**
    * Step 1: Handle Send OTP

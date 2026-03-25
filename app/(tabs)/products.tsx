@@ -42,6 +42,20 @@ import { TokenManager } from "@/utils/tokenManager";
 import BannerCarousel from "@/components/home/BannerCarousel";
 import { API_BASE_URL } from "@/config/config";
 
+// Hàm strip HTML tags để hiển thị text thuần trong card nhỏ
+const stripHtml = (html: string): string => {
+  if (!html) return "";
+  return html
+    .replace(/<[^>]*>/g, " ")   // Xóa tags
+    .replace(/&nbsp;/g, " ")    // &nbsp; -> space
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")       // Nhiều space -> 1 space
+    .trim();
+};
+
 const { width } = Dimensions.get("window");
 
 // Số cột grid trên mobile
@@ -316,14 +330,30 @@ export default function ExploreScreen() {
             {item.name}
           </Text>
 
-          {/* Mô tả */}
+          {/* Mô tả (strip HTML tags) */}
           <Text style={styles.productDescription} numberOfLines={2}>
-            {item.description || "Không có mô tả"}
+            {stripHtml(item.description || "") || "Không có mô tả"}
           </Text>
 
           {/* Giá + Nút Thêm */}
           <View style={styles.productFooter}>
-            <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
+            <View style={styles.priceColumn}>
+              {/* Giá cuối (đã giảm hoặc giá gốc) */}
+              <Text style={styles.productPrice}>
+                {formatPrice(item.hasDiscount && item.discountedPrice ? item.discountedPrice : item.price)}
+              </Text>
+              {/* Giá gốc gạch ngang + badge % (chỉ khi có giảm giá) */}
+              {item.hasDiscount && item.discountedPrice && (
+                <View style={styles.discountRow}>
+                  <Text style={styles.originalPriceSmall}>
+                    {formatPrice(item.originalPrice ?? item.price)}
+                  </Text>
+                  <View style={styles.discountBadgeSmall}>
+                    <Text style={styles.discountBadgeSmallText}>-{item.discountPercent}%</Text>
+                  </View>
+                </View>
+              )}
+            </View>
             {outOfStock ? (
               <View style={[styles.addButton, { backgroundColor: "#94a3b8" }]}>
                 <Text style={styles.addButtonText}>Hết hàng</Text>
@@ -714,7 +744,7 @@ const styles = StyleSheet.create({
   },
   productFooter: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
   },
   productPrice: {
@@ -786,5 +816,33 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     fontSize: 14,
     color: "#64748b",
+  },
+
+  // --- Discount price styles ---
+  priceColumn: {
+    flexDirection: "column",
+    gap: 2,
+    flex: 1,
+  },
+  discountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  originalPriceSmall: {
+    fontSize: 11,
+    color: "#94a3b8",
+    textDecorationLine: "line-through",
+  },
+  discountBadgeSmall: {
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 5,
+  },
+  discountBadgeSmallText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#fff",
   },
 });

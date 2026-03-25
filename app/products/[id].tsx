@@ -21,9 +21,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import RenderHtml from "react-native-render-html";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import service đã có sẵn
+import { useAlert } from "@/contexts/AlertContext";
+import { useCartContext } from "@/contexts/CartContext";
+import { cartService } from "@/services/cartService";
 import {
   formatPrice,
   getProductImageUrl,
@@ -31,12 +35,9 @@ import {
   productService,
   type Product,
 } from "@/services/productService";
-import { cartService } from "@/services/cartService";
-import { TokenManager } from "@/utils/tokenManager";
-import { useAlert } from "@/contexts/AlertContext";
-import { useCartContext } from "@/contexts/CartContext";
-import { reviewService } from "@/services/reviewService";
 import type { ProductReview, ReviewStats } from "@/services/reviewService";
+import { reviewService } from "@/services/reviewService";
+import { TokenManager } from "@/utils/tokenManager";
 
 const { width } = Dimensions.get("window");
 
@@ -84,7 +85,8 @@ export default function ProductDetailScreen() {
 
   // --- State: đánh giá ---
   const [reviews, setReviews] = useState<ProductReview[]>([]);
-  const [reviewStats, setReviewStats] = useState<ReviewStats>(DEFAULT_REVIEW_STATS);
+  const [reviewStats, setReviewStats] =
+    useState<ReviewStats>(DEFAULT_REVIEW_STATS);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
@@ -232,7 +234,7 @@ export default function ProductDetailScreen() {
   // ============================================================
   const handleAddToCart = async () => {
     if (!product || !id) return;
-    
+
     // Check nếu người dùng chưa đăng nhập
     const isLoggedIn = await TokenManager.isLoggedIn();
     if (!isLoggedIn) {
@@ -242,8 +244,11 @@ export default function ProductDetailScreen() {
         message: "Bạn cần đăng nhập trước để thêm sản phẩm vào giỏ hàng.",
         buttons: [
           { text: "Bỏ qua", style: "cancel" },
-          { text: "Đăng nhập", onPress: () => router.push("/(auth)/login" as any) }
-        ]
+          {
+            text: "Đăng nhập",
+            onPress: () => router.push("/(auth)/login" as any),
+          },
+        ],
       });
       return;
     }
@@ -252,9 +257,15 @@ export default function ProductDetailScreen() {
     const response = await cartService.addToCart(id as string, quantity);
     if (response.success) {
       incrementCartCount(quantity);
-      alert.showSuccess("Thành công", `Đã thêm ${quantity} sản phẩm "${product?.name}" vào giỏ hàng!`);
+      alert.showSuccess(
+        "Thành công",
+        `Đã thêm ${quantity} sản phẩm "${product?.name}" vào giỏ hàng!`,
+      );
     } else {
-      alert.showError("Lỗi", response.error || "Có lỗi xảy ra khi thêm vào giỏ hàng.");
+      alert.showError(
+        "Lỗi",
+        response.error || "Có lỗi xảy ra khi thêm vào giỏ hàng.",
+      );
     }
   };
 
@@ -299,19 +310,28 @@ export default function ProductDetailScreen() {
         message: "Bạn cần đăng nhập trước để gửi đánh giá.",
         buttons: [
           { text: "Bỏ qua", style: "cancel" },
-          { text: "Đăng nhập", onPress: () => router.push("/(auth)/login" as any) },
+          {
+            text: "Đăng nhập",
+            onPress: () => router.push("/(auth)/login" as any),
+          },
         ],
       });
       return;
     }
 
     if (reviewRating < 1 || reviewRating > 5) {
-      alert.showWarning("Đánh giá chưa hợp lệ", "Vui lòng chọn số sao từ 1 đến 5.");
+      alert.showWarning(
+        "Đánh giá chưa hợp lệ",
+        "Vui lòng chọn số sao từ 1 đến 5.",
+      );
       return;
     }
 
     if (reviewComment.trim().length < 3) {
-      alert.showWarning("Thiếu nội dung", "Vui lòng nhập nhận xét tối thiểu 3 ký tự.");
+      alert.showWarning(
+        "Thiếu nội dung",
+        "Vui lòng nhập nhận xét tối thiểu 3 ký tự.",
+      );
       return;
     }
 
@@ -350,7 +370,8 @@ export default function ProductDetailScreen() {
       console.error("Submit review error:", error);
       alert.showError(
         "Lỗi",
-        error?.response?.data?.message || "Không thể gửi đánh giá. Vui lòng thử lại.",
+        error?.response?.data?.message ||
+          "Không thể gửi đánh giá. Vui lòng thử lại.",
       );
     } finally {
       setSubmittingReview(false);
@@ -431,20 +452,38 @@ export default function ProductDetailScreen() {
         </View>
 
         {/* Icon giỏ hàng bên dưới Header nếu cần (Nổi lên) */}
-        <TouchableOpacity 
-          style={{ position: 'absolute', top: 12, right: 16, padding: 8, backgroundColor: '#f1f5f9', borderRadius: 12, zIndex: 10 }}
-          onPress={() => router.push('/cart')}
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 16,
+            padding: 8,
+            backgroundColor: "#f1f5f9",
+            borderRadius: 12,
+            zIndex: 10,
+          }}
+          onPress={() => router.push("/cart")}
         >
           <Ionicons name="cart-outline" size={26} color="#1E3A5F" />
           {cartCount > 0 && (
-            <View style={{
-              position: 'absolute', top: -2, right: -4,
-              backgroundColor: '#E63946', borderRadius: 10,
-              minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center',
-              paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#fff'
-            }}>
-              <Text style={{ color: '#fff', fontSize: 10, fontWeight: 'bold' }}>
-                {cartCount > 99 ? '99+' : cartCount}
+            <View
+              style={{
+                position: "absolute",
+                top: -2,
+                right: -4,
+                backgroundColor: "#E63946",
+                borderRadius: 10,
+                minWidth: 20,
+                height: 20,
+                justifyContent: "center",
+                alignItems: "center",
+                paddingHorizontal: 4,
+                borderWidth: 1.5,
+                borderColor: "#fff",
+              }}
+            >
+              <Text style={{ color: "#fff", fontSize: 10, fontWeight: "bold" }}>
+                {cartCount > 99 ? "99+" : cartCount}
               </Text>
             </View>
           )}
@@ -510,9 +549,28 @@ export default function ProductDetailScreen() {
 
           {/* Giá */}
           <View style={styles.priceBar}>
-            <Text style={styles.productPrice}>
-              {formatPrice(product.price)}
-            </Text>
+            {product.hasDiscount && product.discountedPrice ? (
+              <>
+                {/* Giá đã giảm (giá thực trả) */}
+                <Text style={styles.productPrice}>
+                  {formatPrice(product.discountedPrice)}
+                </Text>
+                {/* Giá gốc gạch ngang */}
+                <Text style={styles.originalPrice}>
+                  {formatPrice(product.originalPrice ?? product.price)}
+                </Text>
+                {/* Badge % giảm */}
+                <View style={styles.discountBadge}>
+                  <Text style={styles.discountBadgeText}>
+                    -{product.discountPercent}%
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={styles.productPrice}>
+                {formatPrice(product.price)}
+              </Text>
+            )}
           </View>
 
           {/* Thông tin cơ bản */}
@@ -553,13 +611,13 @@ export default function ProductDetailScreen() {
           {/* <View style={styles.voucherSection}>
             <Text style={styles.voucherTitle}>Mã giảm giá</Text>
             <View style={styles.voucherCard}> */}
-              {/* Nhãn FREE Ship */}
-              {/* <View style={styles.voucherBadge}>
+          {/* Nhãn FREE Ship */}
+          {/* <View style={styles.voucherBadge}>
                 <Text style={styles.voucherBadgeText}>FREE Ship</Text>
               </View> */}
 
-              {/* Thông tin voucher */}
-              {/* <View style={styles.voucherInfo}>
+          {/* Thông tin voucher */}
+          {/* <View style={styles.voucherInfo}>
                 <Text style={styles.voucherCode}>SUMMER2024</Text>
                 <Text style={styles.voucherDesc}>Mô tả mới</Text>
                 <Text style={styles.voucherMin}>
@@ -567,8 +625,8 @@ export default function ProductDetailScreen() {
                 </Text>
               </View> */}
 
-              {/* Nút LƯU */}
-              {/* <TouchableOpacity style={styles.voucherSaveButton}>
+          {/* Nút LƯU */}
+          {/* <TouchableOpacity style={styles.voucherSaveButton}>
                 <Text style={styles.voucherSaveText}>LƯU</Text>
               </TouchableOpacity>
             </View>
@@ -645,9 +703,49 @@ export default function ProductDetailScreen() {
           {/* =============================================== */}
           <View style={styles.descriptionSection}>
             <Text style={styles.sectionTitle}>Mô tả sản phẩm</Text>
-            <Text style={styles.descriptionText}>
-              {product.description || "Sản phẩm hiện chưa có mô tả chi tiết."}
-            </Text>
+            {product.description ? (
+              <RenderHtml
+                contentWidth={width - 32}
+                source={{ html: product.description }}
+                tagsStyles={{
+                  p: {
+                    color: "#334155",
+                    fontSize: 15,
+                    lineHeight: 24,
+                    marginBottom: 8,
+                  },
+                  strong: { fontWeight: "700", color: "#1E3A5F" },
+                  em: { fontStyle: "italic" },
+                  ul: { paddingLeft: 16 },
+                  ol: { paddingLeft: 16 },
+                  li: { color: "#334155", fontSize: 15, lineHeight: 24 },
+                  h1: {
+                    fontSize: 20,
+                    fontWeight: "800",
+                    color: "#1E3A5F",
+                    marginBottom: 8,
+                  },
+                  h2: {
+                    fontSize: 18,
+                    fontWeight: "700",
+                    color: "#1E3A5F",
+                    marginBottom: 6,
+                  },
+                  h3: {
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: "#1E3A5F",
+                    marginBottom: 4,
+                  },
+                  a: { color: "#26C6DA" },
+                }}
+                baseStyle={{ color: "#334155", fontSize: 15 }}
+              />
+            ) : (
+              <Text style={styles.descriptionText}>
+                Sản phẩm hiện chưa có mô tả chi tiết.
+              </Text>
+            )}
           </View>
 
           {/* =============================================== */}
@@ -660,26 +758,39 @@ export default function ProductDetailScreen() {
             <Text style={styles.sectionTitle}>Đánh giá sản phẩm</Text>
 
             {loadingReviews ? (
-              <ActivityIndicator size="small" color="#26C6DA" style={{ marginVertical: 12 }} />
+              <ActivityIndicator
+                size="small"
+                color="#26C6DA"
+                style={{ marginVertical: 12 }}
+              />
             ) : (
               <>
                 <View style={styles.reviewStatsCard}>
                   <View style={styles.reviewAverageBox}>
-                    <Text style={styles.reviewAverageText}>{reviewStats.averageRating.toFixed(1)}</Text>
+                    <Text style={styles.reviewAverageText}>
+                      {reviewStats.averageRating.toFixed(1)}
+                    </Text>
                     {renderStars(Math.round(reviewStats.averageRating), 18)}
-                    <Text style={styles.reviewTotalText}>{reviewStats.totalReviews} đánh giá</Text>
+                    <Text style={styles.reviewTotalText}>
+                      {reviewStats.totalReviews} đánh giá
+                    </Text>
                   </View>
 
                   <View style={styles.reviewDistributionBox}>
                     {[5, 4, 3, 2, 1].map((star) => {
-                      const count = reviewStats.distribution[star as 1 | 2 | 3 | 4 | 5] || 0;
-                      const percent = reviewStats.totalReviews > 0
-                        ? Math.round((count / reviewStats.totalReviews) * 100)
-                        : 0;
+                      const count =
+                        reviewStats.distribution[star as 1 | 2 | 3 | 4 | 5] ||
+                        0;
+                      const percent =
+                        reviewStats.totalReviews > 0
+                          ? Math.round((count / reviewStats.totalReviews) * 100)
+                          : 0;
 
                       return (
                         <View key={star} style={styles.distributionRow}>
-                          <Text style={styles.distributionLabel}>{star} sao</Text>
+                          <Text style={styles.distributionLabel}>
+                            {star} sao
+                          </Text>
                           <View style={styles.distributionBarBg}>
                             <View
                               style={[
@@ -696,15 +807,24 @@ export default function ProductDetailScreen() {
                 </View>
 
                 <View style={styles.reviewFormCard}>
-                  <Text style={styles.reviewFormTitle}>Gửi đánh giá của bạn</Text>
+                  <Text style={styles.reviewFormTitle}>
+                    Gửi đánh giá của bạn
+                  </Text>
 
                   <View style={styles.reviewRatingRow}>
-                    <Text style={styles.reviewRatingLabel}>Chất lượng sản phẩm:</Text>
+                    <Text style={styles.reviewRatingLabel}>
+                      Chất lượng sản phẩm:
+                    </Text>
                     <View style={styles.reviewRatingStarsRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
-                        <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
+                        <TouchableOpacity
+                          key={star}
+                          onPress={() => setReviewRating(star)}
+                        >
                           <Ionicons
-                            name={star <= reviewRating ? "star" : "star-outline"}
+                            name={
+                              star <= reviewRating ? "star" : "star-outline"
+                            }
                             size={24}
                             color="#facc15"
                           />
@@ -721,45 +841,66 @@ export default function ProductDetailScreen() {
                     value={reviewComment}
                     onChangeText={setReviewComment}
                   />
-                  <Text style={styles.reviewCounterText}>{reviewComment.length} / 500</Text>
+                  <Text style={styles.reviewCounterText}>
+                    {reviewComment.length} / 500
+                  </Text>
 
                   <TouchableOpacity
-                    style={[styles.submitReviewBtn, submittingReview && styles.disabledBtn]}
+                    style={[
+                      styles.submitReviewBtn,
+                      submittingReview && styles.disabledBtn,
+                    ]}
                     onPress={handleSubmitReview}
                     disabled={submittingReview}
                   >
                     {submittingReview ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
-                      <Text style={styles.submitReviewBtnText}>Gửi đánh giá</Text>
+                      <Text style={styles.submitReviewBtnText}>
+                        Gửi đánh giá
+                      </Text>
                     )}
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.reviewListSection}>
-                  <Text style={styles.reviewListTitle}>Nhận xét từ khách hàng</Text>
+                  <Text style={styles.reviewListTitle}>
+                    Nhận xét từ khách hàng
+                  </Text>
                   {reviews.length === 0 ? (
-                    <Text style={styles.noReviewText}>Sản phẩm chưa có đánh giá nào.</Text>
+                    <Text style={styles.noReviewText}>
+                      Sản phẩm chưa có đánh giá nào.
+                    </Text>
                   ) : (
                     reviews.map((review) => (
                       <View key={review._id} style={styles.reviewItemCard}>
                         <View style={styles.reviewItemHeader}>
                           <View>
                             <Text style={styles.reviewUserName}>
-                              {review.user?.fullName || review.user?.username || "Người dùng"}
+                              {review.user?.fullName ||
+                                review.user?.username ||
+                                "Người dùng"}
                             </Text>
                             {renderStars(review.rating, 14)}
                           </View>
                           <Text style={styles.reviewDateText}>
-                            {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                            {new Date(review.createdAt).toLocaleDateString(
+                              "vi-VN",
+                            )}
                           </Text>
                         </View>
-                        <Text style={styles.reviewCommentText}>{review.comment}</Text>
+                        <Text style={styles.reviewCommentText}>
+                          {review.comment}
+                        </Text>
 
                         {review.reply?.comment ? (
                           <View style={styles.replyBox}>
-                            <Text style={styles.replyTitle}>Phản hồi từ Shop</Text>
-                            <Text style={styles.replyComment}>{review.reply.comment}</Text>
+                            <Text style={styles.replyTitle}>
+                              Phản hồi từ Shop
+                            </Text>
+                            <Text style={styles.replyComment}>
+                              {review.reply.comment}
+                            </Text>
                           </View>
                         ) : null}
                       </View>
@@ -857,12 +998,22 @@ function SimilarProductCard({ product, onPress }: SimilarProductCardProps) {
 
         {/* Mô tả */}
         <Text style={styles.similarDesc} numberOfLines={2}>
-          {product.description || "Không có mô tả"}
+          {(product.description || "Không có mô tả")
+            .replace(/<[^>]*>/g, " ")
+            .replace(/&nbsp;/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()}
         </Text>
 
         {/* Giá + nút */}
         <View style={styles.similarFooter}>
-          <Text style={styles.similarPrice}>{formatPrice(product.price)}</Text>
+          <Text style={styles.similarPrice}>
+            {formatPrice(
+              product.hasDiscount && product.discountedPrice
+                ? product.discountedPrice
+                : product.price,
+            )}
+          </Text>
           <View style={styles.similarAddBtn}>
             <Ionicons name="cart-outline" size={14} color="#fff" />
             <Text style={styles.similarAddBtnText}>Thêm</Text>
@@ -1010,6 +1161,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   priceBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
     backgroundColor: "#F1F5F9",
     borderRadius: 10,
     paddingVertical: 12,
@@ -1020,6 +1175,23 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "800",
     color: "#26C6DA",
+  },
+  originalPrice: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#94a3b8",
+    textDecorationLine: "line-through",
+  },
+  discountBadge: {
+    backgroundColor: "#ef4444",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  discountBadgeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
   },
 
   // --- Thông số cơ bản ---
